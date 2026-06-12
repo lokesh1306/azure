@@ -3,9 +3,13 @@ kind: HTTPRoute
 metadata:
   name: atlantis
   namespace: tools-az
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
 spec:
   parentRefs:
-    - name: istio-gateway
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: default
       namespace: istio-system
   hostnames:
     - atlantis-az.ops.stack.ai
@@ -15,5 +19,8 @@ spec:
             type: PathPrefix
             value: /
       backendRefs:
-        - name: atlantis
+        - group: ''	
+          kind: Service
+          name: atlantis
           port: 80
+          weight: 1

@@ -56,3 +56,13 @@ resource "azurerm_role_assignment" "cert_manager_zone" {
   role_definition_name = "DNS Zone Contributor"
   principal_id         = azurerm_user_assigned_identity.addon["cert_manager"].principal_id
 }
+
+data "azurerm_resource_group" "this" {
+  name = var.resource_group_name
+}
+
+resource "azurerm_role_assignment" "external_secrets_rg_reader" {
+  scope                = data.azurerm_resource_group.this.id
+  role_definition_name = "Reader"
+  principal_id         = azurerm_user_assigned_identity.addon["external_secrets"].principal_id
+}
