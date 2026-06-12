@@ -1,0 +1,4 @@
+creation_rules:
+  - path_regex: environments/.*/secrets\.yaml$
+    encrypted_regex: "^(data|stringData|customer|infra|argocd|acr|temporal)$"
+    azure_keyvault: "https://REPLACE_WITH_HUB_KV.vault.azure.net/keys/sops/REPLACE_WITH_KEY_VERSION"

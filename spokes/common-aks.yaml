@@ -1,0 +1,73 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: common-aks
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: common-aks-client-tls
+  namespace: argocd
+spec:
+  secretName: common-aks-client-tls
+  duration: 8760h
+  renewBefore: 720h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  commonName: common-aks
+  usages:
+    - client auth
+  issuerRef:
+    name: internal-ca
+    kind: ClusterIssuer
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: common-aks-cluster
+  namespace: argocd
+  annotations:
+    argoproj.io/skip-reconcile: "true"
+  labels:
+    argocd.argoproj.io/secret-type: cluster
+    argocd-agent.argoproj-labs.io/agent-name: common-aks
+type: Opaque
+stringData:
+  name: common-aks
+  server: "https://argocd-agent-resource-proxy.argocd.svc:9090?agentName=common-aks"
+  config: |
+    {
+      "tlsClientConfig": {
+        "insecure": false,
+        "caData":   "REPLACE_WITH_INTERNAL_CA_TLS_CRT_B64",
+        "certData": "REPLACE_WITH_COMMON_AKS_CLIENT_TLS_CRT_B64",
+        "keyData":  "REPLACE_WITH_COMMON_AKS_CLIENT_TLS_KEY_B64"
+      }
+    }
+---
+apiVersion: spire.spiffe.io/v1alpha1
+kind: ClusterStaticEntry
+metadata:
+  name: common-aks-node-alias
+  annotations:
+    argocd.argoproj.io/sync-wave: "-11"
+spec:
+  spiffeID: spiffe://stack.ai/cluster/common-aks/node
+  parentID: spiffe://stack.ai/spire/server
+  selectors:
+    - azure_imds:subscription-id:c05b8dd7-5b0f-4be7-ba37-5f5a0eb52ca8
+    - azure_imds:resource-group:mc_stackai-common-rg_common-aks_eastus
+---
+apiVersion: spire.spiffe.io/v1alpha1
+kind: ClusterStaticEntry
+metadata:
+  name: common-aks-argocd-agent-agent
+  annotations:
+    argocd.argoproj.io/sync-wave: "-11"
+spec:
+  spiffeID: spiffe://stack.ai/cluster/common-aks/ns/stackai-addons/sa/argocd-agent-agent
+  parentID: spiffe://stack.ai/cluster/common-aks/node
+  selectors:
+    - k8s:ns:stackai-addons
+    - k8s:sa:argocd-agent-agent

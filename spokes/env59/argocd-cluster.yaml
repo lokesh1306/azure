@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: env59
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: env59-client-tls
+  namespace: argocd
+spec:
+  secretName: env59-client-tls
+  duration: 8760h
+  renewBefore: 720h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  commonName: env59
+  usages:
+    - client auth
+  issuerRef:
+    name: internal-ca
+    kind: ClusterIssuer
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: env59-cluster
+  namespace: argocd
+  annotations:
+    argoproj.io/skip-reconcile: "true"
+  labels:
+    argocd.argoproj.io/secret-type: cluster
+    argocd-agent.argoproj-labs.io/agent-name: env59
+type: Opaque
+stringData:
+  name: env59
+  server: "https://argocd-agent-resource-proxy.argocd.svc:9090?agentName=env59"
+  config: |
+    {
+      "tlsClientConfig": {
+        "insecure": false,
+        "caData":   "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUJjRENDQVJhZ0F3SUJBZ0lVWFNUeEU0NEx5RFcwVFlCMHF0WTJnS29UcXY0d0NnWUlLb1pJemowRUF3SXcKRmpFVU1CSUdBMVVFQXhNTGFXNTBaWEp1WVd3dFkyRXdIaGNOTWpZd05qQXpNVGcxTURJeVdoY05Nell3TlRNeApNVGcxTURJeVdqQVdNUlF3RWdZRFZRUURFd3RwYm5SbGNtNWhiQzFqWVRCWk1CTUdCeXFHU000OUFnRUdDQ3FHClNNNDlBd0VIQTBJQUJGNCt1c2F0Tm83VGVuZkxTMVoyZmwydGJMWlIrUWlSTzdhRGhKcHQvc29jenRMV0FnMUgKaHNTVGNYaHFuOHNXR1JDcWNnUkYwenp0clc4cmlLb201T1dqUWpCQU1BNEdBMVVkRHdFQi93UUVBd0lDcERBUApCZ05WSFJNQkFmOEVCVEFEQVFIL01CMEdBMVVkRGdRV0JCU1c1WFVmSHQ4eXNVb1gzME1JNVNVazdYQ2s4REFLCkJnZ3Foa2pPUFFRREFnTklBREJGQWlBMWtsYi9seUpNL2xPemNvWU5qS0lDRm1pa050OFlhb1VOZUg1d0xhSzgKa0FJaEFQa0tXWCttVEpOSS9uSlZtRnpsaEcrL2l5RFQrb1Nya3VPa0JoZlE3Zi8yCi0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K",
+        "certData": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUJiakNDQVJTZ0F3SUJBZ0lVWUdjYThNS3BCN2M2MVlrVUY3Yy9UNFpoVTRBd0NnWUlLb1pJemowRUF3SXcKRmpFVU1CSUdBMVVFQXhNTGFXNTBaWEp1WVd3dFkyRXdIaGNOTWpZd05qQTNNRFF5TURVNVdoY05NamN3TmpBMwpNRFF5TURVNVdqQVFNUTR3REFZRFZRUURFd1ZsYm5ZMU56QlpNQk1HQnlxR1NNNDlBZ0VHQ0NxR1NNNDlBd0VICkEwSUFCTWVtOURzYVFEQ1JyN0FEM082ZEgrbVdzc0lxazlERktPRzlncERtcEhtZzBEMWw4WkhYVFpPUmxCK3kKT0h3a210RkRiZzlMUGxaNXpHVXcyaXJIV2hpalJqQkVNQk1HQTFVZEpRUU1NQW9HQ0NzR0FRVUZCd01DTUF3RwpBMVVkRXdFQi93UUNNQUF3SHdZRFZSMGpCQmd3Rm9BVWx1VjFIeDdmTXJGS0Y5OURDT1VsSk8xd3BQQXdDZ1lJCktvWkl6ajBFQXdJRFNBQXdSUUlnU2N4cXdYWHdreVhWK1hCdk1LZlVHbDJOY1pBdHRSNDFRZTlWQmpobGxWSUMKSVFEQnhVWVVESDN5cnRzRlRsdTRvSjhvSHZ4TTBvWTdnSnhqR0FvYitFbXo0Zz09Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K",
+        "keyData":  "LS0tLS1CRUdJTiBFQyBQUklWQVRFIEtFWS0tLS0tCk1IY0NBUUVFSUp3eklWQmpHcVFRbTJjUmxieSs0WkVqcDJCU0ZBMHNSdUFCYVRvblcxNUVvQW9HQ0NxR1NNNDkKQXdFSG9VUURRZ0FFeDZiME94cEFNSkd2c0FQYzdwMGY2WmF5d2lxVDBNVW80YjJDa09ha2VhRFFQV1h4a2RkTgprNUdVSDdJNGZDU2EwVU51RDBzK1Zubk1aVERhS3NkYUdBPT0KLS0tLS1FTkQgRUMgUFJJVkFURSBLRVktLS0tLQo="
+      }
+    }

@@ -1,0 +1,572 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app.kubernetes.io/component: agent
+    app.kubernetes.io/name: argocd-agent-agent
+    app.kubernetes.io/part-of: argocd-agent
+  name: argocd-agent-agent
+  namespace: ${namespace}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    app.kubernetes.io/component: agent
+    app.kubernetes.io/name: argocd-agent-agent
+    app.kubernetes.io/part-of: argocd-agent
+  name: argocd-agent-agent
+  namespace: ${namespace}
+rules:
+- apiGroups:
+  - argoproj.io
+  resources:
+  - applications
+  - appprojects
+  - applicationsets
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - delete
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  - configmaps
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - list
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/component: agent
+    app.kubernetes.io/name: argocd-agent-agent
+    app.kubernetes.io/part-of: argocd-agent
+  name: argocd-agent-agent
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+- apiGroups:
+  - argoproj.io
+  resources:
+  - applications
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - delete
+  - patch
+- apiGroups:
+  - '*'
+  resources:
+  - '*'
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - pods/log
+  verbs:
+  - get
+  - list
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/component: agent
+    app.kubernetes.io/name: argocd-agent-agent
+    app.kubernetes.io/part-of: argocd-agent
+  name: argocd-agent-agent
+  namespace: ${namespace}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: argocd-agent-agent
+subjects:
+- kind: ServiceAccount
+  name: argocd-agent-agent
+  namespace: ${namespace}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/component: agent
+    app.kubernetes.io/name: argocd-agent-agent
+    app.kubernetes.io/part-of: argocd-agent
+  name: argocd-agent-agent
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: argocd-agent-agent
+subjects:
+- kind: ServiceAccount
+  name: argocd-agent-agent
+  namespace: ${namespace}
+---
+apiVersion: v1
+data:
+  agent.allowed-namespaces: ""
+  agent.compression.enable: "false"
+  agent.create-namespace: "false"
+  agent.creds: mtls:uri:spiffe://${trust_domain}/cluster/([^/]+)/.*
+  agent.destination-based-mapping: "false"
+  agent.healthz.port: "8002"
+  agent.informer-sync-timeout: 10s
+  agent.keep-alive.interval: "0"
+  agent.label-selector: ""
+  agent.log.format: text
+  agent.log.level: info
+  agent.metrics.port: "8181"
+  agent.mode: managed
+  agent.namespace: ${namespace}
+  agent.pprof.port: "0"
+  agent.redis.address: argocd-redis:6379
+  agent.redis.tls.ca-path: /app/config/redis-tls/ca.crt
+  agent.redis.tls.enabled: "false"
+  agent.redis.tls.insecure: "false"
+  agent.resource-proxy.enable: "true"
+  agent.server.address: ${principal_address}
+  agent.server.port: ${principal_port}
+  agent.tls.ciphersuites: ""
+  agent.tls.client.cert-path: /run/spire/svid/svid.pem
+  agent.tls.client.insecure: "false"
+  agent.tls.client.key-path: /run/spire/svid/svid_key.pem
+  agent.tls.insecure-plaintext: "false"
+  agent.tls.max-version: ""
+  agent.tls.min-version: ""
+  agent.tls.root-ca-path: /run/spire/svid/svid_bundle.pem
+  agent.tls.root-ca-secret-name: ""
+  agent.tls.secret-name: ""
+  agent.websocket.enable: "false"
+kind: ConfigMap
+metadata:
+  name: argocd-agent-params
+  namespace: ${namespace}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/component: agent
+    app.kubernetes.io/name: argocd-agent-agent
+    app.kubernetes.io/part-of: argocd-agent
+  name: argocd-agent-agent-healthz
+  namespace: ${namespace}
+spec:
+  ports:
+  - name: healthz
+    port: 8002
+    protocol: TCP
+    targetPort: 8002
+  selector:
+    app.kubernetes.io/name: argocd-agent-agent
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/component: agent
+    app.kubernetes.io/name: argocd-agent-agent
+    app.kubernetes.io/part-of: argocd-agent
+  name: argocd-agent-agent-metrics
+  namespace: ${namespace}
+spec:
+  ports:
+  - name: metrics
+    port: 8181
+    protocol: TCP
+    targetPort: 8181
+  selector:
+    app.kubernetes.io/name: argocd-agent-agent
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: argocd-agent-agent
+  name: argocd-agent-agent
+  namespace: ${namespace}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: agent
+      app.kubernetes.io/name: argocd-agent-agent
+      app.kubernetes.io/part-of: argocd-agent
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: agent
+        app.kubernetes.io/name: argocd-agent-agent
+        app.kubernetes.io/part-of: argocd-agent
+    spec:
+      containers:
+      - args:
+        - agent
+        env:
+        - name: ARGOCD_AGENT_REMOTE_SERVER
+          valueFrom:
+            configMapKeyRef:
+              key: agent.server.address
+              name: argocd-agent-params
+              optional: true
+        - name: ARGOCD_AGENT_REMOTE_PORT
+          valueFrom:
+            configMapKeyRef:
+              key: agent.server.port
+              name: argocd-agent-params
+              optional: true
+        - name: ARGOCD_AGENT_LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              key: agent.log.level
+              name: argocd-agent-params
+              optional: true
+        - name: ARGOCD_AGENT_NAMESPACE
+          valueFrom:
+            configMapKeyRef:
+              key: agent.namespace
+              name: argocd-agent-params
+              optional: true
+        - name: ARGOCD_AGENT_TLS_SECRET_NAME
+          valueFrom:
+            configMapKeyRef:
+              key: agent.tls.secret-name
+              name: argocd-agent-params
+              optional: true
+        - name: ARGOCD_AGENT_TLS_CLIENT_CERT_PATH
+          valueFrom:
+            configMapKeyRef:
+              key: agent.tls.client.cert-path
+              name: argocd-agent-params
+              optional: true
+        - name: ARGOCD_AGENT_TLS_CLIENT_KEY_PATH
+          valueFrom:
+            configMapKeyRef:
+              key: agent.tls.client.key-path
+              name: argocd-agent-params
+              optional: true
+        - name: ARGOCD_AGENT_TLS_INSECURE
+          valueFrom:
+            configMapKeyRef:
+              key: agent.tls.client.insecure
+              name: argocd-agent-params
+              optional: true
+        - name: ARGOCD_AGENT_TLS_ROOT_CA_SECRET_NAME
+          valueFrom:
+            configMapKeyRef:
+              key: agent.tls.root-ca-secret-name
+              name: argocd-agent-params
+              optional: true
+        - name: ARGOCD_AGENT_TLS_ROOT_CA_PATH
+          valueFrom:
+            configMapKeyRef:
+              key: agent.tls.root-ca-path
+              name: argocd-agent-params
+              optional: true
+        - name: ARGOCD_AGENT_TLS_MIN_VERSION
+          valueFrom:
+            configMapKeyRef:
+              key: agent.tls.min-version
+              name: argocd-agent-params
+              optional: true
+        - name: ARGOCD_AGENT_TLS_MAX_VERSION
+          valueFrom:
+            configMapKeyRef:
+              key: agent.tls.max-version
+              name: argocd-agent-params
+              optional: true
+        - name: ARGOCD_AGENT_TLS_CIPHERSUITES
+          valueFrom:
+            configMapKeyRef:
+              key: agent.tls.ciphersuites
+              name: argocd-agent-params
+              optional: true
+        - name: ARGOCD_AGENT_MODE
+          valueFrom:
+            configMapKeyRef:
+              key: agent.mode
+              name: argocd-agent-params
+              optional: true
+        - name: ARGOCD_AGENT_CREDS
+          valueFrom:
+            configMapKeyRef:
+              key: agent.creds
+              name: argocd-agent-params
+              optional: true
+        - name: ARGOCD_AGENT_METRICS_PORT
+          valueFrom:
+            configMapKeyRef:
+              key: agent.metrics.port
+              name: argocd-agent-params
+              optional: true
+        - name: ARGOCD_AGENT_HEALTH_CHECK_PORT
+          valueFrom:
+            configMapKeyRef:
+              key: agent.healthz.port
+              name: argocd-agent-params
+              optional: true
+        - name: ARGOCD_AGENT_LOG_FORMAT
+          valueFrom:
+            configMapKeyRef:
+              key: agent.log.format
+              name: argocd-agent-params
+              optional: true
+        - name: ARGOCD_AGENT_ENABLE_WEBSOCKET
+          valueFrom:
+            configMapKeyRef:
+              key: agent.websocket.enable
+              name: argocd-agent-params
+              optional: true
+        - name: ARGOCD_AGENT_ENABLE_COMPRESSION
+          valueFrom:
+            configMapKeyRef:
+              key: agent.compression.enable
+              name: argocd-agent-params
+              optional: true
+        - name: ARGOCD_AGENT_KEEP_ALIVE_PING_INTERVAL
+          valueFrom:
+            configMapKeyRef:
+              key: agent.keep-alive.interval
+              name: argocd-agent-params
+              optional: true
+        - name: ARGOCD_AGENT_PPROF_PORT
+          valueFrom:
+            configMapKeyRef:
+              key: agent.pprof.port
+              name: argocd-agent-params
+              optional: true
+        - name: REDIS_ADDR
+          valueFrom:
+            configMapKeyRef:
+              key: agent.redis.address
+              name: argocd-agent-params
+              optional: true
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: auth
+              name: argocd-redis
+        - name: ARGOCD_AGENT_REDIS_TLS_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              key: agent.redis.tls.enabled
+              name: argocd-agent-params
+              optional: true
+        - name: ARGOCD_AGENT_REDIS_TLS_CA_PATH
+          valueFrom:
+            configMapKeyRef:
+              key: agent.redis.tls.ca-path
+              name: argocd-agent-params
+              optional: true
+        - name: ARGOCD_AGENT_REDIS_TLS_INSECURE
+          valueFrom:
+            configMapKeyRef:
+              key: agent.redis.tls.insecure
+              name: argocd-agent-params
+              optional: true
+        - name: ARGOCD_AGENT_ENABLE_RESOURCE_PROXY
+          valueFrom:
+            configMapKeyRef:
+              key: agent.resource-proxy.enable
+              name: argocd-agent-params
+              optional: true
+        - name: ARGOCD_AGENT_DESTINATION_BASED_MAPPING
+          valueFrom:
+            configMapKeyRef:
+              key: agent.destination-based-mapping
+              name: argocd-agent-params
+              optional: true
+        - name: ARGOCD_AGENT_CREATE_NAMESPACE
+          valueFrom:
+            configMapKeyRef:
+              key: agent.create-namespace
+              name: argocd-agent-params
+              optional: true
+        - name: ARGOCD_AGENT_ALLOWED_NAMESPACES
+          valueFrom:
+            configMapKeyRef:
+              key: agent.allowed-namespaces
+              name: argocd-agent-params
+              optional: true
+        - name: ARGOCD_AGENT_LABEL_SELECTOR
+          valueFrom:
+            configMapKeyRef:
+              key: agent.label-selector
+              name: argocd-agent-params
+              optional: true
+        - name: ARGOCD_AGENT_INSECURE_PLAINTEXT
+          valueFrom:
+            configMapKeyRef:
+              key: agent.tls.insecure-plaintext
+              name: argocd-agent-params
+              optional: true
+        - name: ARGOCD_AGENT_INFORMER_SYNC_TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+              key: agent.informer-sync-timeout
+              name: argocd-agent-params
+              optional: true
+        image: quay.io/argoprojlabs/argocd-agent:v0.9.0
+        imagePullPolicy: Always
+        name: argocd-agent-agent
+        ports:
+        - containerPort: 8000
+          name: metrics
+        - containerPort: 8002
+          name: healthz
+        resources:
+          limits:
+            cpu: "1"
+            memory: 1Gi
+          requests:
+            cpu: 500m
+            memory: 512Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsGroup: 999
+          runAsNonRoot: true
+          runAsUser: 999
+          seccompProfile:
+            type: RuntimeDefault
+        volumeMounts:
+        - mountPath: /run/spire/svid
+          name: spire-svid
+          readOnly: true
+        - mountPath: /app/config/creds
+          name: userpass-passwd
+        - mountPath: /app/config/redis-tls
+          name: redis-tls-ca
+          readOnly: true
+      - command:
+        - sh
+        - -c
+        - |
+          while true; do
+            for d in /proc/[0-9]*; do
+              [ "$(cat $d/comm 2>/dev/null)" = "argocd-agent" ] && echo "$${d##*/}" && break
+            done > /run/spire/svid/argocd-pid
+            sleep 5
+          done
+        image: busybox:1.38.0
+        name: pid-watcher
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
+        volumeMounts:
+        - mountPath: /run/spire/svid
+          name: spire-svid
+      initContainers:
+      - args:
+        - -config
+        - /etc/spiffe-helper/helper.conf
+        image: ghcr.io/spiffe/spiffe-helper:0.11.0
+        name: spiffe-helper
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
+        restartPolicy: Always
+        volumeMounts:
+        - mountPath: /run/spire/agent-sockets
+          name: spiffe-workload-api
+          readOnly: true
+        - mountPath: /run/spire/svid
+          name: spire-svid
+        - mountPath: /etc/spiffe-helper
+          name: spiffe-helper-config
+          readOnly: true
+      - command:
+        - sh
+        - -c
+        - until [ -f /run/spire/svid/svid.pem ] && [ -f /run/spire/svid/svid_bundle.pem
+          ]; do echo "waiting for SVID..."; sleep 1; done
+        image: busybox:1.38.0
+        name: wait-for-svid
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
+        volumeMounts:
+        - mountPath: /run/spire/svid
+          name: spire-svid
+          readOnly: true
+      securityContext:
+        fsGroup: 999
+        fsGroupChangePolicy: OnRootMismatch
+        runAsGroup: 999
+        runAsNonRoot: true
+        runAsUser: 999
+        seccompProfile:
+          type: RuntimeDefault
+      serviceAccountName: argocd-agent-agent
+      shareProcessNamespace: true
+      volumes:
+      - csi:
+          driver: csi.spiffe.io
+          readOnly: true
+        name: spiffe-workload-api
+      - emptyDir:
+          medium: Memory
+        name: spire-svid
+      - configMap:
+          name: spiffe-helper-config
+        name: spiffe-helper-config
+      - name: userpass-passwd
+        secret:
+          items:
+          - key: credentials
+            path: userpass.creds
+          optional: true
+          secretName: argocd-agent-agent-userpass
+      - name: redis-tls-ca
+        secret:
+          items:
+          - key: ca.crt
+            path: ca.crt
+          optional: true
+          secretName: argocd-redis-tls

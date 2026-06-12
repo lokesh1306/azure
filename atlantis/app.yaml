@@ -1,0 +1,142 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: atlantis-az
+  namespace: argocd
+  labels:
+    app: atlantis-az
+    environment: common
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+    notifications.argoproj.io/subscribe.on-health-degraded.slack: argocd
+    notifications.argoproj.io/subscribe.on-sync-failed.slack: argocd
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://runatlantis.github.io/helm-charts
+    targetRevision: 6.4.0
+    chart: atlantis
+    helm:
+      releaseName: atlantis
+      valuesObject:
+        atlantisUrl: "https://atlantis-az.ops.stack.ai"
+        image:
+          repository: chlokesh1306/atlantis-az
+          tag: "v1"
+          pullPolicy: Always
+        orgAllowlist: "github.com/stackai/*"
+        vcsSecretName: "common-atlantis-azure-secret"
+        githubApp:
+          id: "3284646"
+          installationId: "121626510"
+          slug: atlantis-lokesh
+        service:
+          type: ClusterIP
+        serviceAccount:
+          name: atlantis
+        repoConfig: |
+          ---
+          repos:
+          - id: github.com/stackai/infrastructure
+            repo_config_file: _atlantis/atlantis.yaml
+            delete_source_branch_on_merge: true
+            allow_custom_workflows: true
+            apply_requirements: []
+            allowed_overrides: [workflow]
+            pre_workflow_hooks:
+              - run: |
+                  cd $DIR
+                  /etc/atlantis/scripts/atlantis.sh
+          workflows:
+            terragrunt-stack:
+              plan:
+                steps:
+                  - run: |
+                      export ARM_TENANT_ID=$(yq '.tenant_id' env.yaml)
+                      export ARM_SUBSCRIPTION_ID=$(yq '.subscription_id' env.yaml)
+                      export ARM_CLIENT_ID=$(yq '.client_id' env.yaml)
+                      terragrunt stack generate --no-color 2>&1
+                      OUTPUT=$(terragrunt stack run plan --no-color 2>&1)
+                      echo "$OUTPUT" | sed 's/terraform: Plan:/terraform: Subplan:/g'
+                      ADDS=$(echo "$OUTPUT" | grep "Plan:" | grep -oE '[0-9]+ to add' | grep -oE '[0-9]+' | paste -sd+ | bc)
+                      CHANGES=$(echo "$OUTPUT" | grep "Plan:" | grep -oE '[0-9]+ to change' | grep -oE '[0-9]+' | paste -sd+ | bc)
+                      DESTROYS=$(echo "$OUTPUT" | grep "Plan:" | grep -oE '[0-9]+ to destroy' | grep -oE '[0-9]+' | paste -sd+ | bc)
+                      echo ""
+                      echo "Plan: ${ADDS:-0} to add, ${CHANGES:-0} to change, ${DESTROYS:-0} to destroy."
+                      touch "${WORKSPACE}.tfplan"
+              apply:
+                steps:
+                  - run: |
+                      export ARM_TENANT_ID=$(yq '.tenant_id' env.yaml)
+                      export ARM_SUBSCRIPTION_ID=$(yq '.subscription_id' env.yaml)
+                      export ARM_CLIENT_ID=$(yq '.client_id' env.yaml)
+                      terragrunt stack run apply --no-color --non-interactive -- -auto-approve 2>&1
+        volumeClaim:
+          enabled: true
+          dataStorage: 50Gi
+          storageClassName: "gp3"
+          accessModes: ["ReadWriteOnce"]
+        extraVolumes:
+          - name: atlantis
+            secret:
+              secretName: common-atlantis-azure-secret
+              defaultMode: 0755
+              items:
+                - key: atlantis
+                  path: atlantis.sh
+                  mode: 0755
+          - name: azure-identity-token
+            projected:
+              defaultMode: 420
+              sources:
+                - serviceAccountToken:
+                    path: token
+                    audience: api://AzureADTokenExchange
+                    expirationSeconds: 3600
+        extraVolumeMounts:
+          - name: atlantis
+            mountPath: /etc/atlantis/scripts
+            readOnly: true
+          - name: azure-identity-token
+            mountPath: /var/run/secrets/azure
+            readOnly: true
+        environment:
+          TF_IN_AUTOMATION: "true"
+          ARM_USE_OIDC: "true"
+          ARM_OIDC_TOKEN_FILE_PATH: /var/run/secrets/azure/token
+        environmentSecrets:
+          - name: TG_TF_PATH
+            secretKeyRef:
+              name: common-atlantis-azure-secret
+              key: TG_TF_PATH
+          - name: INCIDENT_API_KEY
+            secretKeyRef:
+              name: common-atlantis-azure-secret
+              key: INCIDENT_API_KEY
+        ingress:
+          enabled: false
+        resources:
+          requests:
+            memory: 16Gi
+            cpu: "1"
+          limits:
+            memory: 24Gi
+            cpu: "2"
+        extraArgs:
+          - --silence-no-projects
+          - --silence-vcs-status-no-plans
+          - --vcs-status-name=stackai
+          - --hide-prev-plan-comments
+          - --repo-allowlist=github.com/stackai/*
+  destination:
+    namespace: tools-az
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

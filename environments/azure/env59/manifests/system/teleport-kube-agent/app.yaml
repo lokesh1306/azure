@@ -1,0 +1,55 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: teleport-kube-agent
+  namespace: env59
+  labels:
+    argocd.argoproj.io/agent-id: env59
+spec:
+  project: default
+  source:
+    repoURL: https://charts.releases.teleport.dev
+    chart: teleport-kube-agent
+    targetRevision: 18.7.4
+    helm:
+      releaseName: teleport-kube-agent
+      valuesObject:
+        roles: "kube"
+        proxyAddr: "teleport-agents.ops.stack.ai:443"
+        teleportClusterName: "teleport.ops.stack.ai"
+        joinParams:
+          method: kubernetes
+          tokenName: "env59-agent-kube"
+        kubeClusterName: "env59"
+        labels:
+          env: env59
+        serviceAccount:
+          create: true
+          name: "teleport-kube-agent"
+        highAvailability:
+          replicaCount: 2
+          podDisruptionBudget:
+            enabled: true
+            minAvailable: 1
+        log:
+          level: INFO
+          format: json
+          output: stderr
+        enterprise: false
+        resources:
+          requests:
+            cpu: 200m
+            memory: 1Gi
+          limits:
+            cpu: 300m
+            memory: 1Gi
+  destination:
+    name: env59
+    namespace: teleport
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
