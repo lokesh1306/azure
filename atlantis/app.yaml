@@ -26,7 +26,7 @@ spec:
           repository: chlokesh1306/atlantis-az
           tag: "v1"
           pullPolicy: Always
-        orgAllowlist: "github.com/stackai/*"
+        orgAllowlist: "github.com/lokesh1306/*"
         vcsSecretName: "common-atlantis-azure-secret"
         githubApp:
           id: "3284646"
@@ -39,7 +39,7 @@ spec:
         repoConfig: |
           ---
           repos:
-          - id: github.com/stackai/infrastructure
+          - id: github.com/lokesh1306/azure
             repo_config_file: _atlantis/atlantis.yaml
             delete_source_branch_on_merge: true
             allow_custom_workflows: true
@@ -127,9 +127,9 @@ spec:
         extraArgs:
           - --silence-no-projects
           - --silence-vcs-status-no-plans
-          - --vcs-status-name=stackai
+          - --vcs-status-name=lokesh1306
           - --hide-prev-plan-comments
-          - --repo-allowlist=github.com/stackai/*
+          - --repo-allowlist=github.com/lokesh1306/*
   destination:
     namespace: tools-az
     server: https://kubernetes.default.svc
