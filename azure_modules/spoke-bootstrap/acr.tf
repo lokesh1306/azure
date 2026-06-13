@@ -38,7 +38,8 @@ resource "null_resource" "acr_helm_repo" {
     resource_group_name = var.resource_group_name
     cluster_name        = var.cluster_name
     namespace           = local.argocd_namespace
-    manifest_hash       = sha256(local.acr_helm_repo_manifest)
+    # Re-apply only when the KV secret rotates (new version), not every run.
+    acr_secret_version = data.azurerm_key_vault_secret.acr_credentials[0].version
   }
 
   provisioner "local-exec" {
