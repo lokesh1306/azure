@@ -13,6 +13,10 @@ terraform {
       source  = "hashicorp/random"
       version = "~> 3.9"
     }
+    time = {
+      source  = "hashicorp/time"
+      version = "~> 0.12"
+    }
     incident = {
       source  = "incident-io/incident"
       version = "~> 5.39.0"

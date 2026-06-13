@@ -51,9 +51,10 @@ generate "provider" {
   if_exists = "overwrite_terragrunt"
   contents  = <<-EOF
     provider "azurerm" {
-      environment     = "${local.cloud.provider_environment}"
-      tenant_id       = "${local.env.tenant_id}"
-      subscription_id = "${local.env.subscription_id}"
+      environment         = "${local.cloud.provider_environment}"
+      tenant_id           = "${local.env.tenant_id}"
+      subscription_id     = "${local.env.subscription_id}"
+      storage_use_azuread = true
       features {}
     }
   EOF
