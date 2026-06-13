@@ -25,3 +25,7 @@ output "key_vault_uri" {
 output "acr_credentials_secret_name" {
   value = azurerm_key_vault_secret.acr_credentials.name
 }
+
+output "acr_credentials_secret_version" {
+  value = azurerm_key_vault_secret.acr_credentials.version
+}

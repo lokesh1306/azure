@@ -22,8 +22,9 @@ dependency "secrets" {
   config_path                            = "../06-secrets"
   mock_outputs_merge_strategy_with_state = "shallow"
   mock_outputs = {
-    key_vault_id                = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/mock/providers/Microsoft.KeyVault/vaults/mock-kv"
-    acr_credentials_secret_name = null
+    key_vault_id                   = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/mock/providers/Microsoft.KeyVault/vaults/mock-kv"
+    acr_credentials_secret_name    = null
+    acr_credentials_secret_version = null
   }
   mock_outputs_allowed_terraform_commands = ["plan", "validate", "destroy"]
 }
@@ -77,9 +78,10 @@ inputs = {
   enable_optimized_nodepool = lookup(local.env, "enable_optimized_nodepool", true)
   optimized_nodepool_spec   = lookup(local.env, "optimized_nodepool_spec", null)
 
-  admin_email                 = "admin@${local.domain}"
-  org_name                    = local.env.name
-  apps                        = lookup(local.env, "apps", {})
-  supabase_config             = lookup(local.env, "supabase", {})
-  acr_credentials_secret_name = dependency.secrets.outputs.acr_credentials_secret_name
+  admin_email                    = "admin@${local.domain}"
+  org_name                       = local.env.name
+  apps                           = lookup(local.env, "apps", {})
+  supabase_config                = lookup(local.env, "supabase", {})
+  acr_credentials_secret_name    = dependency.secrets.outputs.acr_credentials_secret_name
+  acr_credentials_secret_version = dependency.secrets.outputs.acr_credentials_secret_version
 }

@@ -46,6 +46,12 @@ variable "acr_credentials_secret_name" {
   default     = null
 }
 
+variable "acr_credentials_secret_version" {
+  description = "Current version of the ACR credentials KV secret (from 06-secrets). Used as the re-apply trigger so the spoke repository secret rotates only when the KV secret changes."
+  type        = string
+  default     = null
+}
+
 variable "apps" {
   description = "Feature flags for which app infrastructure to provision"
   type = object({

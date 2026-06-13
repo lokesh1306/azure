@@ -66,3 +66,9 @@ variable "acr_credentials_secret_name" {
   type        = string
   default     = null
 }
+
+variable "acr_credentials_secret_version" {
+  description = "Current version of the ACR credentials KV secret (from 06-secrets output). Re-apply trigger for the acr-helm-repo secret — rotates only when the KV secret changes. Known at plan, unlike the data source's version."
+  type        = string
+  default     = null
+}

@@ -45,17 +45,18 @@ module "apps" {
 module "spoke_bootstrap" {
   source = "../spoke-bootstrap"
 
-  environment                 = var.environment
-  resource_group_name         = var.resource_group_name
-  subscription_id             = var.subscription_id
-  cluster_name                = var.cluster_name
-  trust_domain                = var.spoke_bootstrap.trust_domain
-  tenant_domain               = var.spoke_bootstrap.tenant_domain
-  hub_spire_endpoint          = var.spoke_bootstrap.hub_spire_endpoint
-  hub_principal_endpoint      = var.spoke_bootstrap.hub_principal_endpoint
-  hub_trust_bundle            = var.spoke_bootstrap.hub_trust_bundle
-  key_vault_id                = var.key_vault_id
-  acr_credentials_secret_name = var.acr_credentials_secret_name
+  environment                    = var.environment
+  resource_group_name            = var.resource_group_name
+  subscription_id                = var.subscription_id
+  cluster_name                   = var.cluster_name
+  trust_domain                   = var.spoke_bootstrap.trust_domain
+  tenant_domain                  = var.spoke_bootstrap.tenant_domain
+  hub_spire_endpoint             = var.spoke_bootstrap.hub_spire_endpoint
+  hub_principal_endpoint         = var.spoke_bootstrap.hub_principal_endpoint
+  hub_trust_bundle               = var.spoke_bootstrap.hub_trust_bundle
+  key_vault_id                   = var.key_vault_id
+  acr_credentials_secret_name    = var.acr_credentials_secret_name
+  acr_credentials_secret_version = var.acr_credentials_secret_version
 
   depends_on = [module.addons]
 }

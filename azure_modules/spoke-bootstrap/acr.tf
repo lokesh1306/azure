@@ -39,7 +39,9 @@ resource "null_resource" "acr_helm_repo" {
     cluster_name        = var.cluster_name
     namespace           = local.argocd_namespace
     # Re-apply only when the KV secret rotates (new version), not every run.
-    acr_secret_version = data.azurerm_key_vault_secret.acr_credentials[0].version
+    # Sourced from 06-secrets' resource output (known at plan) rather than the
+    # data source's version, which azurerm leaves null at plan -> inconsistent plan.
+    acr_secret_version = var.acr_credentials_secret_version
   }
 
   provisioner "local-exec" {
