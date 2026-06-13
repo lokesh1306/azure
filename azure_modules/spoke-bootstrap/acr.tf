@@ -1,13 +1,17 @@
+locals {
+  acr_enabled = var.acr_credentials_secret_name != null && var.key_vault_id != null
+}
+
 data "azurerm_key_vault_secret" "acr_credentials" {
-  count        = var.acr_credentials_secret_name == null || var.key_vault_id == null ? 0 : 1
+  count        = local.acr_enabled ? 1 : 0
   name         = var.acr_credentials_secret_name
   key_vault_id = var.key_vault_id
 }
 
 locals {
-  acr_credentials = length(data.azurerm_key_vault_secret.acr_credentials) > 0 ? jsondecode(data.azurerm_key_vault_secret.acr_credentials[0].value) : null
+  acr_credentials = local.acr_enabled ? jsondecode(data.azurerm_key_vault_secret.acr_credentials[0].value) : null
 
-  acr_helm_repo_manifest = local.acr_credentials == null ? "" : yamlencode({
+  acr_helm_repo_manifest = !local.acr_enabled ? "" : yamlencode({
     apiVersion = "v1"
     kind       = "Secret"
     metadata = {
@@ -27,7 +31,7 @@ locals {
 }
 
 resource "null_resource" "acr_helm_repo" {
-  count = local.acr_credentials == null ? 0 : 1
+  count = local.acr_enabled ? 1 : 0
 
   triggers = {
     subscription_id     = var.subscription_id
