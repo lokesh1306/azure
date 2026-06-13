@@ -103,6 +103,7 @@ resource "azurerm_key_vault_secret" "parser_secrets" {
     api_key_hmac_secret  = random_password.parser_hmac_secret[0].result
     storage_account_name = azurerm_storage_account.parser_service[0].name
     container_name       = azurerm_storage_container.parser_service[0].name
+    s3_bucket_name       = azurerm_storage_account.parser_service[0].name
   })
 
   lifecycle {

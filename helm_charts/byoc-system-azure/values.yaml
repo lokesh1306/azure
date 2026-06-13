@@ -7,7 +7,7 @@ namespaces:
   temporal:       { enabled: true,  ambient: true,  acrPull: true  }
   tika:           { enabled: true,  ambient: true,  acrPull: false }
   unstructured:   { enabled: true,  ambient: true,  acrPull: true  }
-  weaviate:       { enabled: true,  ambient: false, acrPull: false }
+  weaviate:       { enabled: true,  ambient: false, acrPull: true  }
   mongodb:        { enabled: true,  ambient: true,  acrPull: true  }
   istio-system:   { enabled: true,  ambient: false, acrPull: false }
   teleport:       { enabled: true,  ambient: false, acrPull: false }

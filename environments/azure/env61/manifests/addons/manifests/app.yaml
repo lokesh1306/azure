@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: manifests
+  name: addons-manifests
   namespace: env61
   labels:
     argocd.argoproj.io/agent-id: env61

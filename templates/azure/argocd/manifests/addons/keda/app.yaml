@@ -35,6 +35,12 @@ spec:
   destination:
     name: __ENV_NAME__
     namespace: keda
+  ignoreDifferences:
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      jqPathExpressions:
+        - .webhooks[].namespaceSelector
+        - .webhooks[].objectSelector
   syncPolicy:
     automated:
       prune: true

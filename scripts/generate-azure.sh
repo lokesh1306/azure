@@ -162,6 +162,7 @@ MANIFEST_SED=(
   -e "s/__ENV_NAME__/${ENV_NAME}/g"
   -e "s/__PLATFORM__/${PLATFORM}/g"
   -e "s|__EMAIL__|${EMAIL}|g"
+  -e "s|__NOTIFY_EMAIL__|${EMAIL}|g"
   -e "s/__DOMAIN__/${DOMAIN}/g"
 )
 [[ -n "${SUBSCRIPTION_ID}" ]]    && MANIFEST_SED+=(-e "s/__SUBSCRIPTION_ID__/${SUBSCRIPTION_ID}/g")

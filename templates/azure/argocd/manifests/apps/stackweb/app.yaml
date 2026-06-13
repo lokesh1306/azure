@@ -1,0 +1,74 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: stackweb
+  namespace: __ENV_NAME__
+  labels:
+    app: stackweb
+    environment: __ENV_NAME__
+    argocd.argoproj.io/agent-id: __ENV_NAME__
+  annotations:
+    argocd.argoproj.io/sync-options: Replace=true
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  destination:
+    namespace: stackweb
+    name: __ENV_NAME__
+  project: default
+  source:
+    repoURL: stackai.azurecr.io
+    chart: charts/stackweb
+    targetRevision: 0.1.0
+    helm:
+      releaseName: stackweb
+      valuesObject:
+        deploymentAnnotations:
+          reloader.stakater.com/auto: "true"
+        image:
+          repository: stackai.azurecr.io/stackai/stackweb
+          pullPolicy: IfNotPresent
+          tag: v2.3.2
+        serviceAccount:
+          create: true
+          name: stackweb
+        startupProbe:
+          enabled: true
+          path: /
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 60
+          failureThreshold: 30
+        livenessProbe:
+          enabled: true
+          path: /
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 5
+        readinessProbe:
+          enabled: true
+          path: /
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        secretName: stackweb-secrets
+        ingress:
+          enabled: false
+        resources:
+          requests:
+            cpu: 8
+            memory: 8Gi
+          limits:
+            cpu: 16
+            memory: 16Gi
+        env:
+          NODE_OPTIONS: '--max-old-space-size=200'
+        imagePullSecrets:
+          - name: acr-pull-secret
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true

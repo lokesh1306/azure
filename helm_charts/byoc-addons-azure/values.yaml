@@ -15,8 +15,6 @@ externalSecrets:
   store:
     enabled: true
     name: azure-kv
-  # Spoke Key Vault URL; the ClusterSecretStore authenticates via the
-  # external-secrets controller's workload identity.
   vaultUrl: ""
   acrPull:
     enabled: true

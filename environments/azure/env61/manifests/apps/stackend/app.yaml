@@ -1,0 +1,93 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: stackend
+  namespace: env61
+  labels:
+    app: stackend
+    environment: env61
+    argocd.argoproj.io/agent-id: env61
+  annotations:
+    argocd.argoproj.io/sync-options: Replace=true
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  project: default
+  source:
+    repoURL: stackai.azurecr.io
+    chart: charts/stackend
+    targetRevision: 0.1.0
+    helm:
+      releaseName: stackend
+      valuesObject:
+        deploymentAnnotations:
+          reloader.stakater.com/auto: "true"
+        image:
+          repository: stackai.azurecr.io/stackai/stackend-backend
+          pullPolicy: IfNotPresent
+          tag: v2.3.2
+        serviceAccount:
+          create: true
+        ingress:
+          enabled: false
+        valkey:
+          enabled: true
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          image:
+            repository: stackai.azurecr.io/valkey/valkey
+        cache:
+          connection:
+            secretName: ""
+          urls:
+            redis: "redis://stackend-valkey.stackend.svc.cluster.local:6379"
+        temporal:
+          address: "temporal-frontend.temporal.svc.cluster.local:7233"
+          tls:
+            enabled: false
+          cloud: false
+          connection:
+            secretName: ""
+            credentials:
+              namespace: "parsing"
+              apiKey: "not-required-for-self-hosted"
+        workers:
+          temporal:
+            enabled: true
+        marketplace:
+          enabled: false
+        migration:
+          enabled: true
+        postMigration:
+          enabled: true
+        createOrg:
+          enabled: true
+        bootstrapNotify:
+          enabled: true
+          environmentName: "env61"
+          endpoints:
+            - "https://env61.stack.ai"
+            - "https://api.env61.stack.ai"
+          loginUrl: "https://env61.stack.ai"
+          supabaseDashboardUrl: "https://studio.env61.stack.ai"
+          toEmails:
+            - "devops+env61@stack-ai.com"
+        imagePullSecrets:
+          - name: acr-pull-secret
+        kubectlImage:
+          repository: stackai.azurecr.io/bitnami/kubectl
+        postgresImage:
+          repository: stackai.azurecr.io/common/postgres
+  destination:
+    namespace: stackend
+    name: env61
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true

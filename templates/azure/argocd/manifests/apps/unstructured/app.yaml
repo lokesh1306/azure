@@ -1,0 +1,92 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: unstructured
+  namespace: __ENV_NAME__
+  labels:
+    app: unstructured
+    environment: __ENV_NAME__
+    argocd.argoproj.io/agent-id: __ENV_NAME__
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  destination:
+    namespace: unstructured
+    name: __ENV_NAME__
+  project: default
+  source:
+    repoURL: stackai.azurecr.io
+    chart: charts/unstructured
+    targetRevision: 0.1.0
+    helm:
+      releaseName: unstructured
+      valuesObject:
+        deploymentAnnotations:
+          reloader.stakater.com/auto: "true"
+        replicaCount: 2
+        secretName: unstructured-secrets
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+        startupProbe:
+          httpGet:
+            path: /healthcheck
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30
+          successThreshold: 1
+        livenessProbe:
+          httpGet:
+            path: /healthcheck
+            port: http
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+        readinessProbe:
+          httpGet:
+            path: /healthcheck
+            port: http
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+        keda:
+          enabled: true
+          pollingInterval: 15
+          cooldownPeriod: 300
+          minReplicas: 2
+          maxReplicas: 10
+          targetCPUUtilization: "70"
+          scaleDownStabilization: 300
+          scaleUpStabilization: 30
+        affinity:
+          podAntiAffinity:
+            preferredDuringSchedulingIgnoredDuringExecution:
+              - weight: 100
+                podAffinityTerm:
+                  labelSelector:
+                    matchExpressions:
+                    - key: app.kubernetes.io/name
+                      operator: In
+                      values: [unstructured]
+                    - key: app.kubernetes.io/instance
+                      operator: In
+                      values: [unstructured]
+                  topologyKey: kubernetes.io/hostname
+        image:
+          repository: stackai.azurecr.io/unstructured/api
+        imagePullSecrets:
+          - name: acr-pull-secret
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
