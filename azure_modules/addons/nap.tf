@@ -58,16 +58,20 @@ resource "null_resource" "optimized_nodepool" {
     command = <<-EOT
       set -e
       WORKDIR=$(mktemp -d)
+      trap "rm -rf $WORKDIR" EXIT
       cat > "$WORKDIR/optimized-nodepool.yaml" <<'EOYAML'
 ${local.optimized_nodepool_yaml}
 EOYAML
+      if [ -n "$${ARM_OIDC_TOKEN_FILE_PATH:-}" ]; then
+        export AZURE_CONFIG_DIR="$WORKDIR/.azure"
+        az login --service-principal -u "$ARM_CLIENT_ID" -t "$ARM_TENANT_ID" --federated-token "$(cat "$ARM_OIDC_TOKEN_FILE_PATH")" --only-show-errors > /dev/null
+      fi
       az aks command invoke \
         --resource-group ${self.triggers.resource_group_name} \
         --name ${self.triggers.cluster_name} \
         --file "$WORKDIR/optimized-nodepool.yaml" \
         --command "kubectl apply -f optimized-nodepool.yaml" \
         --only-show-errors
-      rm -rf "$WORKDIR"
     EOT
   }
 

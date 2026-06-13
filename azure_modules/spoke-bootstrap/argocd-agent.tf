@@ -60,6 +60,10 @@ EOHELPER
       cat > "$WORKDIR/agent.yaml" <<'EOAGENT'
 ${local.argocd_agent_manifests}
 EOAGENT
+      if [ -n "$${ARM_OIDC_TOKEN_FILE_PATH:-}" ]; then
+        export AZURE_CONFIG_DIR="$WORKDIR/.azure"
+        az login --service-principal -u "$ARM_CLIENT_ID" -t "$ARM_TENANT_ID" --federated-token "$(cat "$ARM_OIDC_TOKEN_FILE_PATH")" --only-show-errors > /dev/null
+      fi
       RESULT=$(az aks command invoke \
         --subscription ${self.triggers.subscription_id} \
         --resource-group ${self.triggers.resource_group_name} \
