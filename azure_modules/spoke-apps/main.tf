@@ -9,6 +9,7 @@ module "addons" {
   resource_group_name     = var.resource_group_name
   location                = data.azurerm_resource_group.spoke.location
   cluster_name            = var.cluster_name
+  subscription_id         = var.subscription_id
   cluster_oidc_issuer_url = var.cluster_oidc_issuer_url
   key_vault_id            = var.key_vault_id
   dns_zone_id             = var.dns_zone_id

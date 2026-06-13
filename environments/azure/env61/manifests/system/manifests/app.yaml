@@ -1,21 +1,24 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: test-podinfo
+  name: manifests
   namespace: env61
   labels:
     argocd.argoproj.io/agent-id: env61
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
 spec:
   project: default
   source:
-    repoURL: https://stefanprodan.github.io/podinfo
-    chart: podinfo
-    targetRevision: 6.9.1
+    repoURL: stackai.azurecr.io
+    chart: charts/byoc-system-azure
+    targetRevision: 0.1.0
     helm:
-      releaseName: test-podinfo
+      releaseName: byoc-system-azure
+      valuesObject: {}
   destination:
     name: env61
-    namespace: test
+    namespace: stackai-addons
   syncPolicy:
     automated:
       prune: true

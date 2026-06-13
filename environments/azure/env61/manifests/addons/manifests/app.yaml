@@ -1,0 +1,73 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: manifests
+  namespace: env61
+  labels:
+    argocd.argoproj.io/agent-id: env61
+  annotations:
+    argocd.argoproj.io/sync-wave: "-15"
+spec:
+  project: default
+  source:
+    repoURL: stackai.azurecr.io
+    chart: charts/byoc-addons-azure
+    targetRevision: 0.1.0
+    helm:
+      releaseName: byoc-addons-azure
+      valuesObject:
+        tlsSecretName: env61-wildcard-tls
+        certManager:
+          enabled: true
+          email: devops+env61@stack-ai.com
+          domain: env61.stack.ai
+          subscriptionID: c05b8dd7-5b0f-4be7-ba37-5f5a0eb52ca8
+          resourceGroupName: stackai-env61-rg
+          hostedZoneName: env61.stack.ai
+        externalSecrets:
+          store:
+            enabled: true
+          vaultUrl: "https://env61-stackai-kv.vault.azure.net/"
+          acrPull:
+            enabled: true
+            sourceSecret: env61-acr-credentials
+        gateway:
+          default:
+            enabled: true
+          restricted:
+            enabled: true
+            sourceRanges:
+              - 54.235.122.194/32
+              - 52.206.51.22/32
+              - 32.195.120.66/32
+              - 3.41.176.48/29
+              - 3.92.150.182/32
+              - 52.55.56.26/32
+              - 107.21.25.247/32
+              - 3.42.136.80/29
+              - 34.208.32.189/32
+              - 52.35.61.232/32
+              - 52.89.221.151/32
+              - 3.40.134.72/29
+              - 18.200.120.237/32
+              - 63.34.100.178/32
+              - 63.35.33.198/32
+              - 3.96.7.126/32
+              - 18.99.4.112/29
+              - 52.60.189.53/32
+              - 99.79.87.237/32
+        mongodbExternalSecret:
+          enabled: true
+          sourceSecret: env61-mongodb-secrets
+        teleportRbac:
+          enabled: true
+  destination:
+    name: env61
+    namespace: stackai-addons
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

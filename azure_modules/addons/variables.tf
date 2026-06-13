@@ -35,6 +35,11 @@ variable "cluster_name" {
   type        = string
 }
 
+variable "subscription_id" {
+  description = "Spoke subscription ID, passed to `az aks command invoke --subscription`."
+  type        = string
+}
+
 variable "enable_optimized_nodepool" {
   description = "Apply the additional `optimized` NodePool with spot capacity. Mirrors AWS Karpenter optional optimized_nodepool."
   type        = bool

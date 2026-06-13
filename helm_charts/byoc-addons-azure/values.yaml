@@ -1,0 +1,56 @@
+tlsSecretName: ""
+
+certManager:
+  enabled: true
+  email: ""
+  domain: ""
+  acmeServer: https://acme-v02.api.letsencrypt.org/directory
+  issuerName: letsencrypt-production
+  # Azure DNS-01 (cert-manager controller uses workload identity).
+  subscriptionID: ""
+  resourceGroupName: ""
+  hostedZoneName: ""
+
+externalSecrets:
+  store:
+    enabled: true
+    name: azure-kv
+  # Spoke Key Vault URL; the ClusterSecretStore authenticates via the
+  # external-secrets controller's workload identity.
+  vaultUrl: ""
+  acrPull:
+    enabled: true
+    sourceSecret: ""
+
+gateway:
+  default:
+    enabled: true
+    replicas: 3
+    tlsSecretName: ""
+    hpa:
+      minReplicas: 3
+      maxReplicas: 10
+      cpuTarget: 70
+    pdb:
+      minAvailable: 2
+  restricted:
+    enabled: true
+    replicas: 2
+    tlsSecretName: ""
+    sourceRanges: []
+    hpa:
+      minReplicas: 2
+      maxReplicas: 5
+      cpuTarget: 70
+    pdb:
+      minAvailable: 1
+
+mongodbExternalSecret:
+  enabled: true
+  sourceSecret: ""
+
+teleportRbac:
+  enabled: true
+  namespace: stackend
+  group: "teleport:developers"
+  clusterRole: view
