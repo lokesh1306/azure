@@ -36,6 +36,8 @@ spec:
           type: ClusterIP
         serviceAccount:
           name: atlantis
+          annotations:
+            eks.amazonaws.com/role-arn: arn:aws:iam::742333896313:role/stackai-az
         repoConfig: |
           ---
           repos:
