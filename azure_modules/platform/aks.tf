@@ -74,3 +74,8 @@ resource "azurerm_role_assignment" "aks_vnet_network_contributor" {
   principal_type       = "ServicePrincipal"
 }
 
+resource "azurerm_role_assignment" "runner_aks_rbac_cluster_admin" {
+  scope                = azurerm_kubernetes_cluster.this.id
+  role_definition_name = "Azure Kubernetes Service RBAC Cluster Admin"
+  principal_id         = data.azurerm_client_config.current.object_id
+}

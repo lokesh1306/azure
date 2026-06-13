@@ -1,0 +1,17 @@
+apiVersion: resources.teleport.dev/v2
+kind: TeleportProvisionToken
+metadata:
+  name: env61-agent-kube
+  namespace: teleport
+  annotations:
+    argocd.argoproj.io/sync-wave: "20"
+spec:
+  roles:
+    - Kube
+  join_method: kubernetes
+  kubernetes:
+    type: oidc
+    oidc:
+      issuer: "REPLACE_WITH_AKS_OIDC_ISSUER_URL"
+    allow:
+      - service_account: "teleport:teleport-kube-agent"

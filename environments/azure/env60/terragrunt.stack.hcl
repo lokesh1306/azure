@@ -1,5 +1,5 @@
 locals {
-  root = "${get_repo_root()}/units/azure/external"
+  root = "${get_repo_root()}/units/azure"
 }
 
 unit "07-infrastructure" {

@@ -139,6 +139,9 @@ resource "azurerm_key_vault_secret" "monitoring" {
     INCIDENT_BEARER_TOKEN = incident_alert_source.monitoring.secret_token
   })
 
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "azurerm_key_vault_secret" "customer_secrets" {
@@ -174,8 +177,6 @@ resource "azurerm_key_vault_secret" "temporal_secrets" {
 }
 
 resource "azurerm_key_vault_secret" "acr_credentials" {
-  count = var.acr_credentials == null ? 0 : 1
-
   name         = "${var.environment}-acr-credentials"
   key_vault_id = azurerm_key_vault.main.id
   value = jsonencode({

@@ -1,5 +1,10 @@
 locals {
-  root = "${get_repo_root()}/units/azure/external"
+  root = "${get_repo_root()}/units/azure"
+}
+
+unit "06-secrets" {
+  source = "${local.root}/06-secrets"
+  path   = "06-secrets"
 }
 
 unit "07-infrastructure" {

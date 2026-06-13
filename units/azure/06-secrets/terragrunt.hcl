@@ -52,9 +52,9 @@ inputs = {
   tenant_id           = local.env.tenant_id
 
   customer_secrets = local.secrets.customer
-  apps_temporal    = lookup(local.env.apps, "temporal", true)
-  acr_credentials = lookup(local.secrets.infra, "acr", null) == null ? null : {
-    server   = local.secrets.infra.acr.server
+  apps_temporal    = lookup(lookup(local.env, "apps", {}), "temporal", true)
+  acr_credentials = {
+    server   = local.env.acr.server
     username = local.secrets.infra.acr.username
     password = local.secrets.infra.acr.password
   }

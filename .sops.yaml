@@ -1,4 +1,5 @@
 creation_rules:
   - path_regex: environments/.*/secrets\.yaml$
-    encrypted_regex: "^(data|stringData|customer|infra|argocd|acr|temporal)$"
-    azure_keyvault: "https://REPLACE_WITH_HUB_KV.vault.azure.net/keys/sops/REPLACE_WITH_KEY_VERSION"
+    kms: "arn:aws:kms:us-east-1:742333896313:key/194bcc7c-c241-44ce-9e02-4b2b21bd4f59"
+  - path_regex: templates/.*/secrets\.yaml$
+    kms: "arn:aws:kms:us-east-1:742333896313:key/194bcc7c-c241-44ce-9e02-4b2b21bd4f59"

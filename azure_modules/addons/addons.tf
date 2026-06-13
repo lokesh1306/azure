@@ -14,7 +14,6 @@ locals {
     }
   }
 
-  has_kv  = var.key_vault_id != null && var.key_vault_id != ""
   has_dns = var.dns_zone_id != null && var.dns_zone_id != ""
 }
 
@@ -37,7 +36,6 @@ resource "azurerm_federated_identity_credential" "addon" {
 }
 
 resource "azurerm_role_assignment" "external_secrets_kv" {
-  count                = local.has_kv ? 1 : 0
   scope                = var.key_vault_id
   role_definition_name = "Key Vault Secrets User"
   principal_id         = azurerm_user_assigned_identity.addon["external_secrets"].principal_id
