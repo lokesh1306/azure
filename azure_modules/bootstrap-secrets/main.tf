@@ -159,11 +159,17 @@ resource "azurerm_key_vault_secret" "monitoring" {
   }
 }
 
+resource "random_id" "workflow_resume_secret" {
+  byte_length = 32
+}
+
 resource "azurerm_key_vault_secret" "customer_secrets" {
   name         = "${var.environment}-customer-secrets"
   key_vault_id = azurerm_key_vault.main.id
   depends_on   = [time_sleep.kv_rbac_propagation]
-  value        = jsonencode(var.customer_secrets)
+  value = jsonencode(merge(var.customer_secrets, {
+    WORKFLOW_RESUME_SECRET = random_id.workflow_resume_secret.b64_url
+  }))
 
   lifecycle {
     ignore_changes = [value]
