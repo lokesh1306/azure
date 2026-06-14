@@ -28,7 +28,7 @@ spec:
         loginUrl: "https://__ENV_NAME__.stack.ai"
         supabaseDashboardUrl: "https://studio.__ENV_NAME__.stack.ai"
         toEmails:
-          - "__NOTIFY_EMAIL__"
+          - "lchallagulla@stack-ai.com"
   syncPolicy:
     automated:
       prune: false

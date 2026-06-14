@@ -5,13 +5,13 @@ set -euo pipefail
 # Generate an Azure spoke environment from template
 # Usage:
 #   ./scripts/generate-azure.sh <env-name> [flags]
-# Flags (all optional; unset values stay as placeholders to fill later):
-#   --email <addr>                contact email (default devops+<env>@stack-ai.com)
-#   --tenant-id <guid>            spoke Entra tenant id
+# Required flags:
 #   --subscription-id <guid>      spoke subscription id
+#   --tenant-id <guid>            spoke Entra tenant id
 #   --client-id <guid>            Atlantis app (client) id for the spoke's tenant
 #   --dns-resource-group <name>   resource group holding the spoke's DNS zone
-#   --with-spokes                 also scaffold hub-side spokes/<env> artifacts
+# Optional flags:
+#   --email <addr>                contact email (default devops+<env>@stack-ai.com)
 # Region is not set here — every resource inherits its location from the
 # pre-created spoke resource group. Domain is derived as <env>.stack.ai.
 # =============================================================================
@@ -28,7 +28,6 @@ TENANT_ID=""
 SUBSCRIPTION_ID=""
 CLIENT_ID=""
 DNS_RESOURCE_GROUP=""
-WITH_SPOKES=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -37,7 +36,6 @@ while [[ $# -gt 0 ]]; do
     --subscription-id)    SUBSCRIPTION_ID="$2"; shift 2 ;;
     --client-id)          CLIENT_ID="$2"; shift 2 ;;
     --dns-resource-group) DNS_RESOURCE_GROUP="$2"; shift 2 ;;
-    --with-spokes)        WITH_SPOKES=1; shift ;;
     -h|--help)
       sed -n '4,17p' "$0" | sed 's/^# \?//'; exit 0 ;;
     -*)                   echo "Unknown flag: $1" >&2; exit 1 ;;
@@ -49,8 +47,21 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+USAGE="Usage: $0 <env-name> --subscription-id <guid> --tenant-id <guid> --client-id <guid> --dns-resource-group <name> [--email <addr>]"
+
 if [[ -z "${ENV_NAME}" ]]; then
-  echo "Usage: $0 <env-name> [--email --tenant-id --subscription-id --client-id --dns-resource-group --with-spokes]" >&2
+  echo "${USAGE}" >&2
+  exit 1
+fi
+
+MISSING=()
+[[ -z "${SUBSCRIPTION_ID}" ]]    && MISSING+=("--subscription-id")
+[[ -z "${TENANT_ID}" ]]          && MISSING+=("--tenant-id")
+[[ -z "${CLIENT_ID}" ]]          && MISSING+=("--client-id")
+[[ -z "${DNS_RESOURCE_GROUP}" ]] && MISSING+=("--dns-resource-group")
+if [[ ${#MISSING[@]} -gt 0 ]]; then
+  echo "ERROR: missing required flag(s): ${MISSING[*]}" >&2
+  echo "${USAGE}" >&2
   exit 1
 fi
 
@@ -129,9 +140,9 @@ mkdir -p "${ENV_DIR}"
 # ---------------------------------------------------------------------------
 sed -e "s/__ENV_NAME__/${ENV_NAME}/g" "${TEMPLATES_DIR}/env.yaml" > "${ENV_DIR}/env.yaml"
 sed_inplace -e "s|^email: .*|email: ${EMAIL}|" "${ENV_DIR}/env.yaml"
-[[ -n "${TENANT_ID}" ]]       && sed_inplace -e "s/CUSTOMER_TENANT_ID/${TENANT_ID}/" "${ENV_DIR}/env.yaml"
-[[ -n "${SUBSCRIPTION_ID}" ]] && sed_inplace -e "s/CUSTOMER_SUBSCRIPTION_ID/${SUBSCRIPTION_ID}/" "${ENV_DIR}/env.yaml"
-[[ -n "${CLIENT_ID}" ]]       && sed_inplace -e "s/ATLANTIS_APP_CLIENT_ID/${CLIENT_ID}/" "${ENV_DIR}/env.yaml"
+sed_inplace -e "s/CUSTOMER_TENANT_ID/${TENANT_ID}/" "${ENV_DIR}/env.yaml"
+sed_inplace -e "s/CUSTOMER_SUBSCRIPTION_ID/${SUBSCRIPTION_ID}/" "${ENV_DIR}/env.yaml"
+sed_inplace -e "s/ATLANTIS_APP_CLIENT_ID/${CLIENT_ID}/" "${ENV_DIR}/env.yaml"
 echo "✓ Created env.yaml"
 
 # ---------------------------------------------------------------------------
@@ -164,26 +175,15 @@ MANIFEST_SED=(
   -e "s|__EMAIL__|${EMAIL}|g"
   -e "s|__NOTIFY_EMAIL__|${EMAIL}|g"
   -e "s/__DOMAIN__/${DOMAIN}/g"
+  -e "s/__SUBSCRIPTION_ID__/${SUBSCRIPTION_ID}/g"
+  -e "s/__TENANT_ID__/${TENANT_ID}/g"
+  -e "s/__DNS_RESOURCE_GROUP__/${DNS_RESOURCE_GROUP}/g"
 )
-[[ -n "${SUBSCRIPTION_ID}" ]]    && MANIFEST_SED+=(-e "s/__SUBSCRIPTION_ID__/${SUBSCRIPTION_ID}/g")
-[[ -n "${TENANT_ID}" ]]          && MANIFEST_SED+=(-e "s/__TENANT_ID__/${TENANT_ID}/g")
-[[ -n "${DNS_RESOURCE_GROUP}" ]] && MANIFEST_SED+=(-e "s/__DNS_RESOURCE_GROUP__/${DNS_RESOURCE_GROUP}/g")
 
 find "${ENV_DIR}/manifests" -type f \( -name "*.yaml" -o -name "*.yml" \) -print0 | xargs -0 "${SED_INPLACE[@]}" "${MANIFEST_SED[@]}"
 
 MANIFEST_COUNT=$(find "${ENV_DIR}/manifests" -type f \( -name "*.yaml" -o -name "*.yml" \) | wc -l | tr -d ' ')
 echo "✓ Generated ${MANIFEST_COUNT} manifest files at environments/azure/${ENV_NAME}/manifests/"
-
-# ---------------------------------------------------------------------------
-# 6. Hub-side per-spoke artifacts (Azure-specific; applied manually to the hub)
-# ---------------------------------------------------------------------------
-if [[ "${WITH_SPOKES}" -eq 1 && -d "${REPO_ROOT}/templates/azure/spokes" ]]; then
-  SPOKE_DIR="${REPO_ROOT}/spokes/${ENV_NAME}"
-  mkdir -p "${SPOKE_DIR}"
-  cp "${REPO_ROOT}/templates/azure/spokes/"*.yaml "${SPOKE_DIR}/" 2>/dev/null || true
-  find "${SPOKE_DIR}" -type f -name "*.yaml" -print0 | xargs -0 "${SED_INPLACE[@]}" -e "s/__ENV_NAME__/${ENV_NAME}/g"
-  echo "✓ Generated spokes/${ENV_NAME} (hub-side; fill subscription/RG/OIDC placeholders before applying)"
-fi
 
 # ---------------------------------------------------------------------------
 # Summary
@@ -195,19 +195,12 @@ echo "=============================================="
 echo ""
 echo "Next steps:"
 echo ""
-echo "  1. Fill any remaining values in environments/azure/${ENV_NAME}/env.yaml"
-echo "     (tenant_id, subscription_id, client_id if not passed as flags; dns_zone_id"
-echo "      when you wire DNS)."
+echo "  1. Add dns_zone_id to environments/azure/${ENV_NAME}/env.yaml once the DNS zone exists."
 echo ""
-echo "  2. If you did not pass --subscription-id/--tenant-id/--dns-resource-group, the"
-echo "     addons manifests still contain __SUBSCRIPTION_ID__ / __TENANT_ID__ /"
-echo "     __DNS_RESOURCE_GROUP__ placeholders — fill them in"
-echo "     environments/azure/${ENV_NAME}/manifests/addons/{external-dns,manifests}/app.yaml"
-echo ""
-echo "  3. Add env-specific secrets to environments/azure/${ENV_NAME}/secrets.yaml:"
+echo "  2. Add env-specific secrets to environments/azure/${ENV_NAME}/secrets.yaml:"
 echo "       sops -d -i ...; edit customer.* + infra.acr; sops -e -i ..."
 echo ""
-echo "  4. Ensure RG + storage account '${ENV_NAME}stackaitfstate' exist."
+echo "  3. Ensure RG + storage account '${ENV_NAME}stackaitfstate' exist."
 echo ""
-echo "  5. Open a PR (Atlantis runs terragrunt stack plan/apply)."
+echo "  4. Open a PR (Atlantis runs terragrunt stack plan/apply)."
 echo ""

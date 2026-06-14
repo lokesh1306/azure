@@ -1,8 +1,8 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: __ENV_NAME__-fanout
-  namespace: __ENV_NAME__
+  name: env62-fanout
+  namespace: env62
 spec:
   goTemplate: true
   generators:
@@ -10,9 +10,10 @@ spec:
         repoURL: https://github.com/lokesh1306/azure.git
         revision: main
         files:
-          - path: "environments/azure/__ENV_NAME__/manifests/system/*/app.yaml"
-          - path: "environments/azure/__ENV_NAME__/manifests/addons/*/app.yaml"
-          - path: "environments/azure/__ENV_NAME__/manifests/observability/*/app.yaml"
+          - path: "environments/azure/env62/manifests/system/*/app.yaml"
+          - path: "environments/azure/env62/manifests/addons/*/app.yaml"
+          - path: "environments/azure/env62/manifests/apps/*/app.yaml"
+          - path: "environments/azure/env62/manifests/observability/*/app.yaml"
   strategy:
     type: RollingSync
     rollingSync:
@@ -28,19 +29,23 @@ spec:
         - matchExpressions:
             - key: tier
               operator: In
+              values: [apps]
+        - matchExpressions:
+            - key: tier
+              operator: In
               values: [observability]
   template:
     metadata:
       name: '{{ index .path.segments 4 }}-{{ .metadata.name }}'
       labels:
         tier: '{{ index .path.segments 4 }}'
-        environment: __ENV_NAME__
-        argocd.argoproj.io/agent-id: __ENV_NAME__
-        managed-by: __ENV_NAME__-fanout
+        environment: env62
+        argocd.argoproj.io/agent-id: env62
+        managed-by: env62-fanout
     spec:
       project: default
       destination:
-        name: __ENV_NAME__
+        name: env62
         namespace: '{{ .spec.destination.namespace }}'
       syncPolicy:
         automated:
