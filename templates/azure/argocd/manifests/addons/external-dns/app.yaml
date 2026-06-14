@@ -1,0 +1,59 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: external-dns
+  namespace: __ENV_NAME__
+  labels:
+    argocd.argoproj.io/agent-id: __ENV_NAME__
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+spec:
+  project: default
+  source:
+    repoURL: https://kubernetes-sigs.github.io/external-dns/
+    chart: external-dns
+    targetRevision: 1.19.0
+    helm:
+      releaseName: external-dns
+      valuesObject:
+        provider:
+          name: azure
+        sources:
+          - gateway-httproute
+        policy: upsert-only
+        txtOwnerId: __ENV_NAME__
+        domainFilters:
+          - __DOMAIN__
+        serviceAccount:
+          create: false
+          name: external-dns
+        podLabels:
+          azure.workload.identity/use: "true"
+        secretConfiguration:
+          enabled: true
+          mountPath: /etc/kubernetes
+          data:
+            azure.json: |
+              {
+                "tenantId": "__TENANT_ID__",
+                "subscriptionId": "__SUBSCRIPTION_ID__",
+                "resourceGroup": "__DNS_RESOURCE_GROUP__",
+                "useWorkloadIdentityExtension": true
+              }
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+  destination:
+    name: __ENV_NAME__
+    namespace: external-dns
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

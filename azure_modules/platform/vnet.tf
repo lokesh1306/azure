@@ -37,19 +37,18 @@ resource "azurerm_subnet" "private_endpoints" {
   private_endpoint_network_policies = "Disabled"
 }
 
-resource "azurerm_network_security_group" "aks" {
+data "azurerm_resources" "aks_managed_nsg" {
   count = local.create_vnet ? 1 : 0
 
-  name                = "${var.environment}-aks-nsg"
-  resource_group_name = data.azurerm_resource_group.spoke.name
-  location            = data.azurerm_resource_group.spoke.location
+  resource_group_name = azurerm_kubernetes_cluster.this.node_resource_group
+  type                = "Microsoft.Network/networkSecurityGroups"
 }
 
 resource "azurerm_subnet_network_security_group_association" "aks" {
   count = local.create_vnet ? 1 : 0
 
   subnet_id                 = azurerm_subnet.aks[0].id
-  network_security_group_id = azurerm_network_security_group.aks[0].id
+  network_security_group_id = data.azurerm_resources.aks_managed_nsg[0].resources[0].id
 }
 
 resource "azurerm_public_ip" "nat" {

@@ -1,0 +1,16 @@
+{{- if .Values.tika.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: tika
+  namespace: tika
+  labels:
+    app.kubernetes.io/name: tika
+    app.kubernetes.io/instance: tika
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tika
+      app.kubernetes.io/instance: tika
+{{- end }}

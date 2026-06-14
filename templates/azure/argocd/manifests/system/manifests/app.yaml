@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: manifests
+  namespace: __ENV_NAME__
+  labels:
+    argocd.argoproj.io/agent-id: __ENV_NAME__
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  project: default
+  source:
+    repoURL: stackai.azurecr.io
+    chart: charts/byoc-system-azure
+    targetRevision: 0.1.0
+    helm:
+      releaseName: byoc-system-azure
+      valuesObject: {}
+  destination:
+    name: __ENV_NAME__
+    namespace: stackai-addons
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

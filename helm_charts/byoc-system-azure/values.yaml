@@ -1,0 +1,18 @@
+namespaces:
+  parser-service: { enabled: true,  ambient: true,  acrPull: true  }
+  stackend:       { enabled: true,  ambient: true,  acrPull: true  }
+  stackrepl:      { enabled: true,  ambient: true,  acrPull: true  }
+  stackweb:       { enabled: true,  ambient: true,  acrPull: true  }
+  supabase:       { enabled: true,  ambient: true,  acrPull: true  }
+  temporal:       { enabled: true,  ambient: true,  acrPull: true  }
+  tika:           { enabled: true,  ambient: true,  acrPull: false }
+  unstructured:   { enabled: true,  ambient: true,  acrPull: true  }
+  weaviate:       { enabled: true,  ambient: false, acrPull: true  }
+  mongodb:        { enabled: true,  ambient: true,  acrPull: true  }
+  istio-system:   { enabled: true,  ambient: false, acrPull: false }
+  teleport:       { enabled: true,  ambient: false, acrPull: false }
+  monitoring:     { enabled: true,  ambient: true,  acrPull: false }
+
+istioPeerAuth:
+  enabled: true
+  mode: STRICT

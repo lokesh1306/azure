@@ -54,3 +54,21 @@ variable "argocd_chart_version" {
   type    = string
   default = "9.5.12"
 }
+
+variable "key_vault_id" {
+  description = "Spoke Key Vault resource ID (from 06-secrets). Required to read the ACR credentials secret."
+  type        = string
+  default     = null
+}
+
+variable "acr_credentials_secret_name" {
+  description = "Key Vault secret name holding ACR registry credentials. Read at apply and projected onto the spoke as an argocd `repository` secret (acr-helm-repo) so the spoke argo-cd repo-server can pull OCI charts. Null skips it."
+  type        = string
+  default     = null
+}
+
+variable "acr_credentials_secret_version" {
+  description = "Current version of the ACR credentials KV secret (from 06-secrets output). Re-apply trigger for the acr-helm-repo secret — rotates only when the KV secret changes. Known at plan, unlike the data source's version."
+  type        = string
+  default     = null
+}

@@ -1,0 +1,19 @@
+env: ""
+domain: ""
+
+aws:
+  region: ""
+
+externalSecrets:
+  stackend:      { enabled: true }
+  stackweb:      { enabled: true }
+  supabase:      { enabled: true }
+  temporal:      { enabled: true }
+  parserService: { enabled: true }
+  unstructured:  { enabled: true }
+  weaviate:      { enabled: true }
+
+tika:
+  pdb: { enabled: true }
+
+httpRoutes: {}

@@ -1,0 +1,78 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: manifests
+  namespace: __ENV_NAME__
+  labels:
+    argocd.argoproj.io/agent-id: __ENV_NAME__
+  annotations:
+    argocd.argoproj.io/sync-wave: "-5"
+spec:
+  project: default
+  source:
+    repoURL: stackai.azurecr.io
+    chart: charts/byoc-apps-azure
+    targetRevision: 0.1.0
+    helm:
+      releaseName: byoc-apps-azure
+      valuesObject:
+        env: __ENV_NAME__
+        domain: __ENV_NAME__.stack.ai
+        aws:
+          region: us-east-1
+        externalSecrets:
+          stackend:      { enabled: true }
+          stackweb:      { enabled: true }
+          supabase:      { enabled: true }
+          temporal:      { enabled: true }
+          parserService: { enabled: true }
+          unstructured:  { enabled: true }
+          weaviate:      { enabled: true }
+        tika:
+          pdb: { enabled: true }
+        httpRoutes:
+          stackend:
+            enabled: true
+            namespace: stackend
+            gateway: { name: default, namespace: istio-system }
+            hostnames: ["api.__ENV_NAME__.stack.ai"]
+            backend: { name: stackend, port: 8000 }
+            paths: ["/"]
+          stackweb:
+            enabled: true
+            namespace: stackweb
+            gateway: { name: default, namespace: istio-system }
+            hostnames: ["__ENV_NAME__.stack.ai"]
+            backend: { name: stackweb, port: 3000 }
+            paths: ["/"]
+          supabase-apis:
+            enabled: true
+            namespace: supabase
+            gateway: { name: default, namespace: istio-system }
+            hostnames: ["supabase.__ENV_NAME__.stack.ai"]
+            backend: { name: supabase-supabase-kong, port: 8000 }
+            paths: ["/auth", "/rest", "/realtime", "/storage", "/functions", "/pg"]
+          supabase-studio:
+            enabled: true
+            namespace: supabase
+            gateway: { name: restricted, namespace: istio-system }
+            hostnames: ["studio.__ENV_NAME__.stack.ai"]
+            backend: { name: supabase-supabase-kong, port: 8000 }
+            paths: ["/"]
+          temporal:
+            enabled: true
+            namespace: temporal
+            gateway: { name: restricted, namespace: istio-system }
+            hostnames: ["temporal.__ENV_NAME__.stack.ai"]
+            backend: { name: temporal-web, port: 8080 }
+            paths: ["/"]
+  destination:
+    name: __ENV_NAME__
+    namespace: stackai-addons
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

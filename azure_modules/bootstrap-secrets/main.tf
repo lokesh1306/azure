@@ -2,13 +2,26 @@ data "azurerm_resource_group" "spoke" {
   name = var.resource_group_name
 }
 
+data "azurerm_client_config" "current" {}
+
+resource "azurerm_role_assignment" "runner_kv_secrets_officer" {
+  scope                = azurerm_key_vault.main.id
+  role_definition_name = "Key Vault Secrets Officer"
+  principal_id         = data.azurerm_client_config.current.object_id
+}
+
+resource "time_sleep" "kv_rbac_propagation" {
+  depends_on      = [azurerm_role_assignment.runner_kv_secrets_officer]
+  create_duration = "60s"
+}
+
 resource "azurerm_key_vault" "main" {
   name                       = substr(replace("${var.environment}-stackai-kv", "_", "-"), 0, 24)
   resource_group_name        = data.azurerm_resource_group.spoke.name
   location                   = data.azurerm_resource_group.spoke.location
   tenant_id                  = var.tenant_id
   sku_name                   = "standard"
-  enable_rbac_authorization  = true
+  rbac_authorization_enabled = true
   purge_protection_enabled   = true
   soft_delete_retention_days = 30
 
@@ -26,6 +39,7 @@ resource "random_bytes" "supabase_cookie_secret" {
 resource "azurerm_key_vault_secret" "supabase_oauth" {
   name         = "${var.environment}-supabase-oauth"
   key_vault_id = azurerm_key_vault.main.id
+  depends_on   = [time_sleep.kv_rbac_propagation]
   value = jsonencode({
     cookie_secret = random_bytes.supabase_cookie_secret.base64
   })
@@ -134,16 +148,21 @@ resource "incident_alert_route" "monitoring" {
 resource "azurerm_key_vault_secret" "monitoring" {
   name         = "${var.environment}-monitoring-secrets"
   key_vault_id = azurerm_key_vault.main.id
+  depends_on   = [time_sleep.kv_rbac_propagation]
   value = jsonencode({
     INCIDENT_ALERT_URL    = incident_alert_source.monitoring.alert_events_url
     INCIDENT_BEARER_TOKEN = incident_alert_source.monitoring.secret_token
   })
 
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "azurerm_key_vault_secret" "customer_secrets" {
   name         = "${var.environment}-customer-secrets"
   key_vault_id = azurerm_key_vault.main.id
+  depends_on   = [time_sleep.kv_rbac_propagation]
   value        = jsonencode(var.customer_secrets)
 
   lifecycle {
@@ -163,6 +182,7 @@ resource "azurerm_key_vault_secret" "temporal_secrets" {
 
   name         = "${var.environment}-temporal-secrets"
   key_vault_id = azurerm_key_vault.main.id
+  depends_on   = [time_sleep.kv_rbac_propagation]
   value = jsonencode({
     db_password = random_password.temporal_db[0].result
   })
@@ -174,10 +194,9 @@ resource "azurerm_key_vault_secret" "temporal_secrets" {
 }
 
 resource "azurerm_key_vault_secret" "acr_credentials" {
-  count = var.acr_credentials == null ? 0 : 1
-
   name         = "${var.environment}-acr-credentials"
   key_vault_id = azurerm_key_vault.main.id
+  depends_on   = [time_sleep.kv_rbac_propagation]
   value = jsonencode({
     server   = var.acr_credentials.server
     username = var.acr_credentials.username

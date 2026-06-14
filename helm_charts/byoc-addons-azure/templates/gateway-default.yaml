@@ -1,0 +1,91 @@
+{{- if .Values.gateway.default.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: default-gateway-options
+  namespace: istio-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+data:
+  deployment: |
+    spec:
+      replicas: {{ .Values.gateway.default.replicas }}
+  service: |
+    spec:
+      type: LoadBalancer
+      externalTrafficPolicy: Local
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: default
+  namespace: istio-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  gatewayClassName: istio
+  infrastructure:
+    parametersRef:
+      group: ""
+      kind: ConfigMap
+      name: default-gateway-options
+  listeners:
+    - name: http
+      port: 80
+      protocol: HTTP
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: https
+      port: 443
+      protocol: HTTPS
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - group: ''
+            name: {{ .Values.gateway.default.tlsSecretName | default .Values.tlsSecretName }}
+            kind: Secret
+      allowedRoutes:
+        namespaces:
+          from: All
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: default
+  namespace: istio-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: default-istio
+  minReplicas: {{ .Values.gateway.default.hpa.minReplicas }}
+  maxReplicas: {{ .Values.gateway.default.hpa.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.gateway.default.hpa.cpuTarget }}
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 30
+    scaleDown:
+      stabilizationWindowSeconds: 300
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: default
+  namespace: istio-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  minAvailable: {{ .Values.gateway.default.pdb.minAvailable }}
+  selector:
+    matchLabels:
+      gateway.networking.k8s.io/gateway-name: default
+{{- end }}

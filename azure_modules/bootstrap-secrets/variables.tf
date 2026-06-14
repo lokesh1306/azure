@@ -26,12 +26,12 @@ variable "apps_temporal" {
 }
 
 variable "acr_credentials" {
-  description = "Container registry credentials (server/username/password) materialized as a single KV secret when not null."
+  description = "Container registry credentials (server/username/password) materialized as a single KV secret. Required — apply fails if absent from secrets.yaml."
   type = object({
     server   = string
     username = string
     password = string
   })
-  default   = null
+  nullable  = false
   sensitive = true
 }
