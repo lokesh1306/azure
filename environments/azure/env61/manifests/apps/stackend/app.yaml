@@ -24,7 +24,7 @@ spec:
         image:
           repository: stackai.azurecr.io/stackai/stackend-backend
           pullPolicy: IfNotPresent
-          tag: v2.3.2
+          tag: v2.4.2
         serviceAccount:
           create: true
         ingress:
@@ -66,16 +66,6 @@ spec:
           enabled: true
         createOrg:
           enabled: true
-        bootstrapNotify:
-          enabled: true
-          environmentName: "env61"
-          endpoints:
-            - "https://env61.stack.ai"
-            - "https://api.env61.stack.ai"
-          loginUrl: "https://env61.stack.ai"
-          supabaseDashboardUrl: "https://studio.env61.stack.ai"
-          toEmails:
-            - "devops+env61@stack-ai.com"
         imagePullSecrets:
           - name: acr-pull-secret
         kubectlImage:

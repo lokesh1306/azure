@@ -11,6 +11,7 @@ namespaces:
   mongodb:        { enabled: true,  ambient: true,  acrPull: true  }
   istio-system:   { enabled: true,  ambient: false, acrPull: false }
   teleport:       { enabled: true,  ambient: false, acrPull: false }
+  monitoring:     { enabled: true,  ambient: true,  acrPull: false }
 
 istioPeerAuth:
   enabled: true

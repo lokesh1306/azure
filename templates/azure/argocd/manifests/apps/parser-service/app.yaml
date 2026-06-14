@@ -25,14 +25,14 @@ spec:
         image:
           repository: stackai.azurecr.io/stackai/parser-service
           pullPolicy: IfNotPresent
-          tag: v2.3.2
+          tag: v2.4.2
         secretName: parser-service-secrets
         worker:
           enabled: true
           image:
             repository: stackai.azurecr.io/stackai/parser-worker
             pullPolicy: IfNotPresent
-            tag: v2.3.2
+            tag: v2.4.2
           replicaCount: 2
           resources:
             requests:

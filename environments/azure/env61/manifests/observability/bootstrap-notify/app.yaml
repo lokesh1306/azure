@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: bootstrap-notify
+  namespace: env61
+  labels:
+    app: bootstrap-notify
+    environment: env61
+    argocd.argoproj.io/agent-id: env61
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"
+spec:
+  destination:
+    namespace: stackend
+    name: env61
+  project: default
+  source:
+    repoURL: stackai.azurecr.io
+    chart: charts/bootstrap-notify
+    targetRevision: 0.1.0
+    helm:
+      releaseName: bootstrap-notify
+      valuesObject:
+        environmentName: "env61"
+        endpoints:
+          - "https://env61.stack.ai"
+          - "https://api.env61.stack.ai"
+        loginUrl: "https://env61.stack.ai"
+        supabaseDashboardUrl: "https://studio.env61.stack.ai"
+        toEmails:
+          - "devops+env61@stack-ai.com"
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: false
+    syncOptions:
+      - CreateNamespace=false

@@ -12,6 +12,7 @@ spec:
         files:
           - path: "environments/azure/__ENV_NAME__/manifests/system/*/app.yaml"
           - path: "environments/azure/__ENV_NAME__/manifests/addons/*/app.yaml"
+          - path: "environments/azure/__ENV_NAME__/manifests/observability/*/app.yaml"
   strategy:
     type: RollingSync
     rollingSync:
@@ -24,6 +25,10 @@ spec:
             - key: tier
               operator: In
               values: [addons]
+        - matchExpressions:
+            - key: tier
+              operator: In
+              values: [observability]
   template:
     metadata:
       name: '{{ index .path.segments 4 }}-{{ .metadata.name }}'

@@ -27,7 +27,7 @@ spec:
         image:
           repository: stackai.azurecr.io/stackai/stackweb
           pullPolicy: IfNotPresent
-          tag: v2.3.2
+          tag: v2.4.2
         serviceAccount:
           create: true
           name: stackweb

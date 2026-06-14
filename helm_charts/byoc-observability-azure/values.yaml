@@ -1,0 +1,7 @@
+externalSecrets:
+  store:
+    name: azure-kv
+
+monitoringExternalSecret:
+  enabled: true
+  sourceSecret: ""
