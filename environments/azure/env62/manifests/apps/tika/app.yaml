@@ -1,0 +1,96 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tika
+  namespace: env62
+  labels:
+    app: tika
+    environment: env62
+    argocd.argoproj.io/agent-id: env62
+spec:
+  destination:
+    namespace: tika
+    name: env62
+  project: default
+  source:
+    repoURL: https://apache.jfrog.io/artifactory/tika
+    chart: tika
+    targetRevision: 3.2.2
+    helm:
+      releaseName: tika
+      valuesObject:
+        replicaCount: 2
+        image:
+          repository: docker.io/apache/tika
+          pullPolicy: IfNotPresent
+          tag: '3.2.2.0-full'
+        serviceAccount:
+          create: true
+          annotations: {}
+          name: ''
+        podAnnotations: {}
+        podSecurityContext: {}
+        securityContext:
+          allowPrivilegeEscalation: true
+          capabilities:
+            drop:
+              - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 35002
+          runAsGroup: 35002
+        service:
+          type: ClusterIP
+          port: 9998
+        ingress:
+          enabled: false
+        livenessProbe:
+          initialDelaySeconds: 15
+          timeoutSeconds: 30
+          failureThreshold: 20
+          periodSeconds: 5
+          scheme: HTTP
+        readinessProbe:
+          initialDelaySeconds: 15
+          timeoutSeconds: 30
+          failureThreshold: 20
+          periodSeconds: 5
+          scheme: HTTP
+        resources:
+          limits:
+            cpu: '8'
+            memory: 8000Mi
+          requests:
+            cpu: '4'
+            memory: 4000Mi
+        autoscaling:
+          apiVersion: autoscaling/v2
+          enabled: true
+          minReplicas: 2
+          maxReplicas: 10
+          targetCPUUtilizationPercentage: 70
+          targetMemoryUtilizationPercentage: 80
+        nodeSelector: {}
+        tolerations: []
+        affinity:
+          podAntiAffinity:
+            preferredDuringSchedulingIgnoredDuringExecution:
+              - weight: 100
+                podAffinityTerm:
+                  labelSelector:
+                    matchLabels:
+                      app.kubernetes.io/name: tika
+                      app.kubernetes.io/instance: tika
+                  topologyKey: kubernetes.io/hostname
+        topologySpreadConstraints: []
+        networkPolicy:
+          enabled: false
+          allowExternal: false
+        config:
+          base_url: 'http://tika.tika.svc.cluster.local:9998/'
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=false

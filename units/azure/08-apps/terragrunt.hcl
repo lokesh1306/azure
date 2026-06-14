@@ -72,7 +72,7 @@ inputs = {
   cluster_name            = dependency.platform.outputs.cluster_name
   cluster_oidc_issuer_url = dependency.platform.outputs.cluster_oidc_issuer_url
   key_vault_id            = dependency.secrets.outputs.key_vault_id
-  dns_zone_id             = lookup(local.env, "dns_zone_id", null)
+  dns_zone_id             = local.env.dns_zone_id
   spoke_bootstrap         = local.env.spoke_bootstrap
 
   enable_optimized_nodepool = lookup(local.env, "enable_optimized_nodepool", true)

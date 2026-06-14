@@ -25,9 +25,9 @@ variable "key_vault_id" {
 }
 
 variable "dns_zone_id" {
-  description = "Resource ID of an Azure DNS public zone. external-dns and cert-manager get DNS Zone Contributor on it. Optional — when null, the identities are still created but no DNS role is bound."
+  description = "Resource ID of an Azure DNS public zone. external-dns and cert-manager get DNS Zone Contributor on it."
   type        = string
-  default     = null
+  nullable    = false
 }
 
 variable "cluster_name" {
