@@ -143,6 +143,7 @@ sed_inplace -e "s|^email: .*|email: ${EMAIL}|" "${ENV_DIR}/env.yaml"
 sed_inplace -e "s/CUSTOMER_TENANT_ID/${TENANT_ID}/" "${ENV_DIR}/env.yaml"
 sed_inplace -e "s/CUSTOMER_SUBSCRIPTION_ID/${SUBSCRIPTION_ID}/" "${ENV_DIR}/env.yaml"
 sed_inplace -e "s/ATLANTIS_APP_CLIENT_ID/${CLIENT_ID}/" "${ENV_DIR}/env.yaml"
+sed_inplace -e "s|<dns-rg>|${DNS_RESOURCE_GROUP}|" "${ENV_DIR}/env.yaml"
 echo "✓ Created env.yaml"
 
 # ---------------------------------------------------------------------------

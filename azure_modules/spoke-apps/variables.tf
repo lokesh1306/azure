@@ -75,9 +75,9 @@ variable "supabase_config" {
 }
 
 variable "dns_zone_id" {
-  description = "Azure DNS public zone resource ID for external-dns/cert-manager (optional)."
+  description = "Azure DNS public zone resource ID for external-dns/cert-manager."
   type        = string
-  default     = null
+  nullable    = false
 }
 
 variable "enable_optimized_nodepool" {
