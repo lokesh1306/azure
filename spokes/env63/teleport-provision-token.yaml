@@ -12,6 +12,6 @@ spec:
   kubernetes:
     type: oidc
     oidc:
-      issuer: "https://eastus.oic.prod-aks.azure.com/562d3203-96d4-4a11-85af-5f4c197ce345/3b4e1d1f-c1e3-4ea8-b2cc-b5b8818cdb09/"
+      issuer: "https://eastus.oic.prod-aks.azure.com/2a377f54-325c-469f-8fa6-944a91f7a2f5/4eb07895-e381-4342-9b4d-c12a9429ed86/"
     allow:
       - service_account: "teleport:teleport-kube-agent"
