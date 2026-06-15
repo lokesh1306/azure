@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: manifests
+  namespace: env64
+  labels:
+    argocd.argoproj.io/agent-id: env64
+  annotations:
+    argocd.argoproj.io/sync-wave: "-5"
+spec:
+  project: default
+  source:
+    repoURL: stackai.azurecr.io
+    chart: charts/byoc-observability-azure
+    targetRevision: 0.1.0
+    helm:
+      releaseName: byoc-observability-azure
+      valuesObject:
+        externalSecrets:
+          store:
+            name: azure-kv
+        monitoringExternalSecret:
+          enabled: true
+          sourceSecret: env64-monitoring-secrets
+  destination:
+    name: env64
+    namespace: stackai-addons
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

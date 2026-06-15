@@ -1,0 +1,69 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: env64-fanout
+  namespace: env64
+spec:
+  goTemplate: true
+  generators:
+    - git:
+        repoURL: https://github.com/lokesh1306/azure.git
+        revision: main
+        files:
+          - path: "environments/azure/env64/manifests/system/*/app.yaml"
+          - path: "environments/azure/env64/manifests/addons/*/app.yaml"
+          - path: "environments/azure/env64/manifests/apps/*/app.yaml"
+          - path: "environments/azure/env64/manifests/observability/*/app.yaml"
+  strategy:
+    type: RollingSync
+    rollingSync:
+      steps:
+        - matchExpressions:
+            - key: tier
+              operator: In
+              values: [system]
+        - matchExpressions:
+            - key: tier
+              operator: In
+              values: [addons]
+        - matchExpressions:
+            - key: tier
+              operator: In
+              values: [apps]
+        - matchExpressions:
+            - key: tier
+              operator: In
+              values: [observability]
+  template:
+    metadata:
+      name: '{{ index .path.segments 4 }}-{{ .metadata.name }}'
+      labels:
+        tier: '{{ index .path.segments 4 }}'
+        environment: env64
+        argocd.argoproj.io/agent-id: env64
+        managed-by: env64-fanout
+    spec:
+      project: default
+      destination:
+        name: env64
+        namespace: '{{ .spec.destination.namespace }}'
+      syncPolicy:
+        automated:
+          prune: false
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true
+  templatePatch: |
+    spec:
+      {{- if hasKey .spec "sources" }}
+      sources: {{ toYaml .spec.sources | nindent 8 }}
+      {{- else }}
+      source: {{ toYaml .spec.source | nindent 8 }}
+      {{- end }}
+      {{- if hasKey .spec "ignoreDifferences" }}
+      ignoreDifferences: {{ toYaml .spec.ignoreDifferences | nindent 8 }}
+      {{- end }}
+      {{- if hasKey .spec "syncPolicy" }}
+      syncPolicy: {{ toYaml .spec.syncPolicy | nindent 8 }}
+      {{- end }}
