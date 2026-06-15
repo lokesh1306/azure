@@ -1,0 +1,276 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring
+  namespace: env64
+  labels:
+    app: monitoring
+    environment: env64
+    argocd.argoproj.io/agent-id: env64
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+    notifications.argoproj.io/subscribe.on-health-degraded.slack: team-engineering-argocd
+    notifications.argoproj.io/subscribe.on-sync-failed.slack: team-engineering-argocd
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: team-engineering-argocd
+spec:
+  destination:
+    namespace: monitoring
+    name: env64
+  project: default
+  source:
+    repoURL: https://twin.github.io/helm-charts
+    chart: gatus
+    targetRevision: 1.5.0
+    helm:
+      releaseName: monitoring
+      valuesObject:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 250m
+            memory: 256Mi
+        persistence:
+          enabled: true
+          size: 10Gi
+          storageClassName: managed-csi
+        ingress:
+          enabled: false
+        envFrom:
+          - secretRef:
+              name: monitoring-secrets
+        gateway:
+          route:
+            enabled: true
+            parentRefs:
+              - name: restricted
+                namespace: istio-system
+            hosts:
+              - monitoring.env64.stack.ai
+        config:
+          ui:
+            title: "Stack AI | Status"
+            header: "Stack AI"
+            dashboard-heading: "Service Health"
+            dashboard-subheading: "Health of services in env64 cluster"
+          storage:
+            type: sqlite
+            path: /data/gatus.db
+          metrics: true
+          alerting:
+            custom:
+              url: "${INCIDENT_ALERT_URL}"
+              method: "POST"
+              headers:
+                Authorization: "Bearer ${INCIDENT_BEARER_TOKEN}"
+                Accept: "application/json"
+                Content-Type: "application/json"
+              placeholders:
+                ALERT_TRIGGERED_OR_RESOLVED:
+                  TRIGGERED: "firing"
+                  RESOLVED: "resolved"
+              body: |
+                {"title":"[env64] [ENDPOINT_NAME] is [ALERT_TRIGGERED_OR_RESOLVED]","status":"[ALERT_TRIGGERED_OR_RESOLVED]","description":"Environment: env64\nService: [ENDPOINT_NAME]\nGroup: [ENDPOINT_GROUP]\nURL: [ENDPOINT_URL]\nErrors: [RESULT_ERRORS]\nConditions: [RESULT_CONDITIONS]","deduplication_key":"monitoring-env64-[ENDPOINT_GROUP]-[ENDPOINT_NAME]","source_url":"https://monitoring.env64.stack.ai","metadata":{"env":"env64","source":"monitoring","priority":"p0"}}
+              default-alert:
+                enabled: true
+                failure-threshold: 3
+                success-threshold: 1
+                send-on-resolved: true
+                description: "health check failed"
+          endpoints:
+            - name: Stackweb
+              group: stackweb
+              url: https://stackai.com
+              interval: 60s
+              headers:
+                Connection: close
+              conditions:
+                - "[STATUS] == 200"
+              alerts:
+                - type: custom
+            - name: Stackend
+              group: stackend
+              url: http://stackend.stackend.svc.cluster.local:8000/healthz
+              interval: 60s
+              headers:
+                Connection: close
+              conditions:
+                - "[STATUS] == 200"
+              alerts:
+                - type: custom
+            - name: Stackend Valkey
+              group: stackend
+              url: tcp://stackend-valkey.stackend.svc.cluster.local:6379
+              interval: 60s
+              conditions:
+                - "[CONNECTED] == true"
+              alerts:
+                - type: custom
+            - name: Parser Service
+              group: parser-service
+              url: http://parser-service.parser-service.svc.cluster.local:8001/api/v1/health/live
+              interval: 60s
+              headers:
+                Connection: close
+              conditions:
+                - "[STATUS] == 200"
+              alerts:
+                - type: custom
+            - name: Parser Service Valkey
+              group: parser-service
+              url: tcp://parser-service-valkey.parser-service.svc.cluster.local:6379
+              interval: 60s
+              conditions:
+                - "[CONNECTED] == true"
+              alerts:
+                - type: custom
+            - name: Unstructured
+              group: unstructured
+              url: http://unstructured.unstructured.svc.cluster.local:8000/healthcheck
+              interval: 60s
+              headers:
+                Connection: close
+              conditions:
+                - "[STATUS] == 200"
+              alerts:
+                - type: custom
+            - name: Tika
+              group: tika
+              url: http://tika.tika.svc.cluster.local:9998/version
+              interval: 60s
+              headers:
+                Connection: close
+              conditions:
+                - "[STATUS] == 200"
+              alerts:
+                - type: custom
+            - name: Weaviate
+              group: weaviate
+              url: tcp://weaviate.weaviate.svc.cluster.local:80
+              interval: 60s
+              conditions:
+                - "[CONNECTED] == true"
+              alerts:
+                - type: custom
+            - name: MongoDB
+              group: mongodb
+              url: tcp://mongodb-svc.mongodb.svc.cluster.local:27017
+              interval: 60s
+              conditions:
+                - "[CONNECTED] == true"
+              alerts:
+                - type: custom
+            - name: Supabase Kong
+              group: supabase
+              url: tcp://supabase-supabase-kong.supabase.svc.cluster.local:8000
+              interval: 60s
+              conditions:
+                - "[CONNECTED] == true"
+              alerts:
+                - type: custom
+            - name: Supabase Auth
+              group: supabase
+              url: http://supabase-supabase-auth.supabase.svc.cluster.local:9999/health
+              interval: 60s
+              headers:
+                Connection: close
+              conditions:
+                - "[STATUS] == 200"
+              alerts:
+                - type: custom
+            - name: Supabase REST
+              group: supabase
+              url: http://supabase-supabase-rest.supabase.svc.cluster.local:3000/
+              interval: 60s
+              headers:
+                Connection: close
+              conditions:
+                - "[STATUS] == 200"
+              alerts:
+                - type: custom
+            - name: Supabase Storage
+              group: supabase
+              url: http://supabase-supabase-storage.supabase.svc.cluster.local:5000/status
+              interval: 60s
+              headers:
+                Connection: close
+              conditions:
+                - "[STATUS] == 200"
+              alerts:
+                - type: custom
+            - name: Supabase Realtime
+              group: supabase
+              url: tcp://supabase-supabase-realtime.supabase.svc.cluster.local:4000
+              interval: 60s
+              conditions:
+                - "[CONNECTED] == true"
+              alerts:
+                - type: custom
+            - name: Supabase MinIO
+              group: supabase
+              url: http://supabase-supabase-minio.supabase.svc.cluster.local:9000/minio/health/live
+              interval: 60s
+              headers:
+                Connection: close
+              conditions:
+                - "[STATUS] == 200"
+              alerts:
+                - type: custom
+            - name: Supabase DB
+              group: supabase
+              url: tcp://supabase-supabase-db.supabase.svc.cluster.local:5432
+              interval: 60s
+              conditions:
+                - "[CONNECTED] == true"
+              alerts:
+                - type: custom
+            - name: Temporal Frontend
+              group: temporal
+              url: tcp://temporal-frontend.temporal.svc.cluster.local:7233
+              interval: 60s
+              conditions:
+                - "[CONNECTED] == true"
+              alerts:
+                - type: custom
+            - name: Temporal History
+              group: temporal
+              url: tcp://temporal-history-headless.temporal.svc.cluster.local:7234
+              interval: 60s
+              conditions:
+                - "[CONNECTED] == true"
+              alerts:
+                - type: custom
+            - name: Temporal Matching
+              group: temporal
+              url: tcp://temporal-matching-headless.temporal.svc.cluster.local:7235
+              interval: 60s
+              conditions:
+                - "[CONNECTED] == true"
+              alerts:
+                - type: custom
+            - name: Temporal Worker
+              group: temporal
+              url: tcp://temporal-worker-headless.temporal.svc.cluster.local:7239
+              interval: 60s
+              conditions:
+                - "[CONNECTED] == true"
+              alerts:
+                - type: custom
+            - name: Temporal Postgresql
+              group: temporal
+              url: tcp://temporal-postgresql.temporal.svc.cluster.local:5432
+              interval: 60s
+              conditions:
+                - "[CONNECTED] == true"
+              alerts:
+                - type: custom
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - RespectIgnoreDifferences=true

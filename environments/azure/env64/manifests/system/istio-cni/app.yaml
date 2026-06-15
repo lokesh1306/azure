@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: istio-cni
+  namespace: env64
+  labels:
+    app: istio-cni
+    argocd.argoproj.io/agent-id: env64
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  project: default
+  sources:
+    - repoURL: https://istio-release.storage.googleapis.com/charts
+      chart: cni
+      targetRevision: "1.29.4"
+      helm:
+        releaseName: istio-cni
+        valuesObject:
+          profile: ambient
+          cni:
+            cniConfName: "15-azure-swift-overlay.conflist"
+            ambient:
+              ipv6: false
+  destination:
+    name: env64
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true

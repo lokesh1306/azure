@@ -1,0 +1,136 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: parser-service
+  namespace: env64
+  labels:
+    app: parser-service
+    environment: env64
+    argocd.argoproj.io/agent-id: env64
+  annotations:
+    argocd.argoproj.io/sync-options: Replace=true
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  project: default
+  source:
+    repoURL: stackai.azurecr.io
+    chart: charts/parser-service
+    targetRevision: 0.1.0
+    helm:
+      releaseName: parser-service
+      valuesObject:
+        deploymentAnnotations:
+          reloader.stakater.com/auto: "true"
+        replicaCount: 2
+        image:
+          repository: stackai.azurecr.io/stackai/parser-service
+          pullPolicy: IfNotPresent
+          tag: v2.4.2
+        secretName: parser-service-secrets
+        worker:
+          enabled: true
+          image:
+            repository: stackai.azurecr.io/stackai/parser-worker
+            pullPolicy: IfNotPresent
+            tag: v2.4.2
+          replicaCount: 2
+          resources:
+            requests:
+              cpu: 2
+              memory: 4Gi
+            limits:
+              cpu: 4
+              memory: 8Gi
+          affinity:
+            podAntiAffinity:
+              preferredDuringSchedulingIgnoredDuringExecution:
+              - weight: 100
+                podAffinityTerm:
+                  labelSelector:
+                    matchLabels:
+                      app.kubernetes.io/name: parser-service
+                      app.kubernetes.io/component: worker
+                  topologyKey: kubernetes.io/hostname
+        ingress:
+          enabled: false
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+        startupProbe:
+          httpGet:
+            path: /api/v1/health/live
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 18
+          successThreshold: 1
+        livenessProbe:
+          httpGet:
+            path: /api/v1/health/live
+            port: http
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+        readinessProbe:
+          httpGet:
+            path: /api/v1/health/ready
+            port: http
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+          successThreshold: 1
+        affinity:
+          podAntiAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                  - parser-service
+              topologyKey: kubernetes.io/hostname
+        valkey:
+          enabled: true
+          logLevel: "notice"
+          persistence:
+            enabled: true
+            storageClassName: managed-csi
+            accessModes:
+              - ReadWriteOnce
+            size: 20Gi
+          resources:
+            requests:
+              cpu: "1"
+              memory: 2Gi
+            limits:
+              cpu: "2"
+              memory: 4Gi
+          extraArgs:
+            - "--maxmemory"
+            - "3gb"
+            - "--maxmemory-policy"
+            - "allkeys-lru"
+            - "--save"
+            - ""
+            - "--stop-writes-on-bgsave-error"
+            - "no"
+        temporal:
+          namespaceInit:
+            enabled: false
+        imagePullSecrets:
+          - name: acr-pull-secret
+  destination:
+    namespace: parser-service
+    name: env64
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
