@@ -53,6 +53,7 @@ inputs = {
   }
 
   vnet_cidr                           = lookup(local.env, "vnet_cidr", "10.50.0.0/16")
+  availability_zones                  = lookup(local.env, "availability_zones", ["1", "2", "3"])
   pod_cidr                            = lookup(local.env, "pod_cidr", "10.244.0.0/16")
   service_cidr                        = lookup(local.env, "service_cidr", "172.16.0.0/16")
   dns_service_ip                      = lookup(local.env, "dns_service_ip", "172.16.0.10")

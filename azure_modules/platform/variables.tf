@@ -43,6 +43,12 @@ variable "vnet_cidr" {
   default     = "10.50.0.0/16"
 }
 
+variable "availability_zones" {
+  description = "Availability zones for the system node pool. Set to [] for subscriptions/regions without AKS AZ support."
+  type        = list(string)
+  default     = ["1", "2", "3"]
+}
+
 variable "pod_cidr" {
   description = "Overlay CIDR for AKS pods (Cilium overlay, not in the VNet). Override only if it collides with on-prem / peered networks."
   type        = string
