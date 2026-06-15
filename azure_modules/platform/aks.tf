@@ -39,10 +39,10 @@ resource "azurerm_kubernetes_cluster" "this" {
 
   default_node_pool {
     name            = "system"
-    vm_size         = "Standard_D2s_v5"
+    vm_size         = var.system_vm_size
     vnet_subnet_id  = local.aks_subnet_id
     node_count      = 2
-    zones           = ["1", "2", "3"]
+    zones           = var.availability_zones
     os_disk_size_gb = 50
     os_disk_type    = "Managed"
 
