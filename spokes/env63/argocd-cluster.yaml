@@ -59,7 +59,7 @@ spec:
   spiffeID: spiffe://stack.ai/cluster/env63/node
   parentID: spiffe://stack.ai/spire/server
   selectors:
-    - azure_imds:subscription-id:c05b8dd7-5b0f-4be7-ba37-5f5a0eb52ca8
+    - azure_imds:subscription-id:40339116-837f-4e30-ba76-7a0ed1d4dcfc
     - azure_imds:resource-group:mc_stackai-env63-rg_env63-aks_eastus
 ---
 apiVersion: spire.spiffe.io/v1alpha1
