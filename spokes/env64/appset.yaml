@@ -1,8 +1,8 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: env63-fanout
-  namespace: env63
+  name: env64-fanout
+  namespace: env64
 spec:
   goTemplate: true
   generators:
@@ -10,10 +10,10 @@ spec:
         repoURL: https://github.com/lokesh1306/azure.git
         revision: main
         files:
-          - path: "environments/azure/env63/manifests/system/*/app.yaml"
-          - path: "environments/azure/env63/manifests/addons/*/app.yaml"
-          - path: "environments/azure/env63/manifests/apps/*/app.yaml"
-          - path: "environments/azure/env63/manifests/observability/*/app.yaml"
+          - path: "environments/azure/env64/manifests/system/*/app.yaml"
+          - path: "environments/azure/env64/manifests/addons/*/app.yaml"
+          - path: "environments/azure/env64/manifests/apps/*/app.yaml"
+          - path: "environments/azure/env64/manifests/observability/*/app.yaml"
   strategy:
     type: RollingSync
     rollingSync:
@@ -39,13 +39,13 @@ spec:
       name: '{{ index .path.segments 4 }}-{{ .metadata.name }}'
       labels:
         tier: '{{ index .path.segments 4 }}'
-        environment: env63
-        argocd.argoproj.io/agent-id: env63
-        managed-by: env63-fanout
+        environment: env64
+        argocd.argoproj.io/agent-id: env64
+        managed-by: env64-fanout
     spec:
       project: default
       destination:
-        name: env63
+        name: env64
         namespace: '{{ .spec.destination.namespace }}'
       syncPolicy:
         automated:
