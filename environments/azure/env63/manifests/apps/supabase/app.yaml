@@ -1,0 +1,384 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: supabase
+  namespace: env63
+  labels:
+    app: supabase
+    environment: env63
+    argocd.argoproj.io/agent-id: env63
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  destination:
+    namespace: supabase
+    name: env63
+  project: default
+  source:
+    repoURL: stackai.azurecr.io
+    chart: charts/supabase
+    targetRevision: 0.1.0
+    helm:
+      releaseName: supabase
+      valuesObject:
+        secret:
+          jwt:
+            secretRef: supabase-secrets
+            secretRefKey:
+              anonKey: anon_key
+              serviceKey: service_role_key
+              secret: jwt_secret
+          db:
+            secretRef: supabase-db-credentials
+            secretRefKey:
+              password: password
+              database: database
+          analytics:
+            secretRef: supabase-secrets
+            secretRefKey:
+              publicAccessToken: logflare_api_key
+              privateAccessToken: logflare_api_key
+          smtp:
+            secretRef: supabase-secrets
+            secretRefKey:
+              username: smtp_username
+              password: smtp_password
+          dashboard:
+            secretRef: supabase-secrets
+            secretRefKey:
+              password: dashboard_password
+            username: admin
+            openAiApiKey: ""
+          s3:
+            keyId: supa-storage
+            secretRef: supabase-secrets
+            secretRefKey:
+              accessKey: minio_secret_key
+            endpoint: http://supabase-supabase-minio:9000
+            protocol: http
+            forcePathStyle: true
+            region: us-east-1
+          realtime:
+            secretRef: supabase-secrets
+            secretRefKey:
+              secretKeyBase: realtime_secret_key_base
+          meta:
+            secretRef: supabase-secrets
+            secretRefKey:
+              cryptoKey: meta_crypto_key
+        db:
+          enabled: true
+          replicaCount: 1
+          persistence:
+            enabled: true
+            storageClassName: "managed-csi"
+            size: 50Gi
+            accessModes:
+              - ReadWriteOnce
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: 2000m
+              memory: 4Gi
+          environment:
+            POSTGRES_HOST: /var/run/postgresql
+            PGPORT: "5432"
+            POSTGRES_PORT: "5432"
+            JWT_EXP: 3600
+          imagePullSecrets:
+            - name: acr-pull-secret
+          image:
+            repository: stackai.azurecr.io/supabase/postgres
+        studio:
+          enabled: true
+          replicaCount: 1
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          imagePullSecrets:
+            - name: acr-pull-secret
+          image:
+            repository: stackai.azurecr.io/supabase/studio
+          environment:
+            HOSTNAME: "::"
+            STUDIO_PORT: "3000"
+            DEFAULT_ORGANIZATION_NAME: "env63"
+            DEFAULT_PROJECT_NAME: "env63"
+            SUPABASE_PUBLIC_URL: https://supabase.env63.stack.ai
+            NEXT_PUBLIC_ENABLE_LOGS: "true"
+            NEXT_ANALYTICS_BACKEND_PROVIDER: postgres
+        auth:
+          enabled: true
+          replicaCount: 2
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          envFrom:
+            - secretRef:
+                name: supabase-google-oauth
+            - secretRef:
+                name: supabase-saml-secrets
+          environment:
+            DB_USER: supabase_auth_admin
+            DB_PORT: "5432"
+            DB_DRIVER: postgres
+            DB_SSL: disable
+            API_EXTERNAL_URL: https://supabase.env63.stack.ai/auth/v1
+            GOTRUE_API_HOST: "0.0.0.0"
+            GOTRUE_API_PORT: "9999"
+            GOTRUE_SITE_URL: https://env63.stack.ai
+            GOTRUE_URI_ALLOW_LIST: "https://env63.stack.ai/**,https://env63.stack.ai/auth/callback"
+            GOTRUE_DISABLE_SIGNUP: "false"
+            GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+            GOTRUE_JWT_ADMIN_ROLES: service_role
+            GOTRUE_JWT_AUD: authenticated
+            GOTRUE_JWT_EXP: "86400"
+            GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+            GOTRUE_MAILER_AUTOCONFIRM: "true"
+            GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED: "false"
+            GOTRUE_EXTERNAL_PHONE_ENABLED: "false"
+            GOTRUE_SMS_AUTOCONFIRM: "false"
+            GOTRUE_SAML_ENABLED: "true"
+            GOTRUE_EXTERNAL_GOOGLE_ENABLED: "true"
+            GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI: "https://supabase.env63.stack.ai/auth/v1/callback"
+        rest:
+          enabled: true
+          replicaCount: 2
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          environment:
+            DB_USER: authenticator
+            DB_PORT: "5432"
+            DB_DRIVER: postgres
+            DB_SSL: disable
+            PGRST_DB_SCHEMAS: public,storage,graphql_public
+            PGRST_DB_ANON_ROLE: anon
+            PGRST_DB_USE_LEGACY_GUCS: "false"
+            PGRST_APP_SETTINGS_JWT_EXP: "86400"
+        realtime:
+          enabled: true
+          replicaCount: 2
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          envFrom:
+            - secretRef:
+                name: supabase-secrets
+          environment:
+            DB_USER: supabase_admin
+            DB_PORT: "5432"
+            DB_SSL: "false"
+            PORT: "4000"
+            FLY_ALLOC_ID: FlyAllocId
+            FLY_APP_NAME: realtime
+            APP_NAME: realtime
+            ENABLE_TAILSCALE: "false"
+            DB_AFTER_CONNECT_QUERY: "SET search_path TO _realtime"
+            ERL_AFLAGS: -proto_dist inet_tcp
+            DNS_NODES: "''"
+            RLIMIT_NOFILE: "10000"
+            SEED_SELF_HOST: "true"
+            RUN_JANITOR: "true"
+        meta:
+          enabled: true
+          replicaCount: 1
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          environment:
+            DB_USER: supabase_admin
+            DB_PORT: "5432"
+            DB_DRIVER: postgres
+            DB_SSL: disable
+            PG_META_PORT: "8080"
+        storage:
+          enabled: true
+          replicaCount: 1
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          environment:
+            DB_USER: supabase_storage_admin
+            DB_PORT: "5432"
+            DB_DRIVER: postgres
+            DB_SSL: disable
+            REQUEST_ALLOW_X_FORWARDED_PATH: "true"
+            PGOPTIONS: "-c search_path=storage,public"
+            FILE_SIZE_LIMIT: "52428800"
+            STORAGE_BACKEND: s3
+            GLOBAL_S3_BUCKET: stub
+            GLOBAL_S3_PROTOCOL: http
+            GLOBAL_S3_FORCE_PATH_STYLE: "true"
+            AWS_DEFAULT_REGION: us-east-1
+            FILE_STORAGE_BACKEND_PATH: /var/lib/storage
+            TENANT_ID: stub
+            REGION: us-east-1
+            ENABLE_IMAGE_TRANSFORMATION: "true"
+          s3Protocol:
+            enabled: true
+            accessKeyId: "supa-storage"
+          persistence:
+            enabled: false
+        imgproxy:
+          enabled: true
+          replicaCount: 1
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          environment:
+            IMGPROXY_BIND: ":5001"
+            IMGPROXY_LOCAL_FILESYSTEM_ROOT: /
+            IMGPROXY_USE_ETAG: "true"
+            IMGPROXY_ENABLE_WEBP_DETECTION: "true"
+          persistence:
+            enabled: false
+        kong:
+          enabled: true
+          replicaCount: 2
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: 2000m
+              memory: 4Gi
+          environment:
+            KONG_DATABASE: "off"
+            KONG_DECLARATIVE_CONFIG: /usr/local/kong/kong.yml
+            KONG_DNS_ORDER: LAST,A,CNAME
+            KONG_PLUGINS: request-transformer,cors,key-auth,acl,basic-auth
+            KONG_NGINX_PROXY_PROXY_BUFFER_SIZE: 160k
+            KONG_NGINX_PROXY_PROXY_BUFFERS: 64 160k
+            KONG_LOG_LEVEL: warn
+          ingress:
+            enabled: false
+        analytics:
+          enabled: true
+          replicaCount: 1
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          envFrom:
+            - secretRef:
+                name: supabase-db-credentials
+          environment:
+            LOGFLARE_NODE_HOST: 127.0.0.1
+            DB_USERNAME: supabase_admin
+            DB_DATABASE: _supabase
+            DB_PORT: "5432"
+            DB_SCHEMA: _analytics
+            POSTGRES_BACKEND_SCHEMA: _analytics
+            LOGFLARE_SINGLE_TENANT: "true"
+            LOGFLARE_SUPABASE_MODE: "true"
+            LOGFLARE_MIN_CLUSTER_SIZE: "1"
+            LOGFLARE_FEATURE_FLAG_OVERRIDE: multibackend=true
+          bigQuery:
+            enabled: false
+        vector:
+          enabled: true
+          replicaCount: 1
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+        functions:
+          enabled: true
+          replicaCount: 1
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          environment:
+            DB_USERNAME: postgres
+            DB_PORT: "5432"
+            DB_DRIVER: postgresql
+            DB_SSL: disable
+            VERIFY_JWT: "false"
+        minio:
+          enabled: true
+          replicaCount: 1
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+          environment:
+            MINIO_ROOT_USER: supa-storage
+          persistence:
+            enabled: true
+            storageClassName: "managed-csi"
+            size: 50Gi
+            accessModes:
+              - ReadWriteOnce
+          service:
+            type: ClusterIP
+            port: 9000
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+    - group: apps
+      kind: StatefulSet
+      jsonPointers:
+        - /spec/replicas
+    - group: ""
+      kind: Secret
+      jsonPointers:
+        - /data
+    - group: ""
+      kind: ConfigMap
+      name: supabase-kong-config
+      jsonPointers:
+        - /data
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true
