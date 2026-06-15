@@ -10,6 +10,7 @@ module "platform" {
   private_dns_suffixes = var.private_dns_suffixes
 
   vnet_cidr                           = var.vnet_cidr
+  availability_zones                  = var.availability_zones
   pod_cidr                            = var.pod_cidr
   service_cidr                        = var.service_cidr
   dns_service_ip                      = var.dns_service_ip
