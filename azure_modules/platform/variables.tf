@@ -49,6 +49,12 @@ variable "availability_zones" {
   default     = ["1", "2", "3"]
 }
 
+variable "system_vm_size" {
+  description = "VM size for the system node pool"
+  type        = string
+  default     = "Standard_D2s_v5"
+}
+
 variable "pod_cidr" {
   description = "Overlay CIDR for AKS pods (Cilium overlay, not in the VNet). Override only if it collides with on-prem / peered networks."
   type        = string

@@ -11,6 +11,7 @@ module "platform" {
 
   vnet_cidr                           = var.vnet_cidr
   availability_zones                  = var.availability_zones
+  system_vm_size                      = var.system_vm_size
   pod_cidr                            = var.pod_cidr
   service_cidr                        = var.service_cidr
   dns_service_ip                      = var.dns_service_ip
